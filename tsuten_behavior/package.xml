@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+  <name>tsuten_behavior</name>
+  <version>1.0.0</version>
+  <description>Implements behavior of Tsuten.</description>
+  <maintainer email="mitukou1109@gmail.com">Mitsuhiro Sakamoto</maintainer>
+
+  <license>MIT</license>
+
+  <depend>actionlib</depend>
+  <depend>roscpp</depend>
+  <depend>tsuten_mechanism</depend>
+  <depend>tsuten_msgs</depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="wheel" params="prefix parent *joint_origin">
+    <xacro:property name="mesh_path" value="$(find tsuten_description)/meshes/omni_wheel.stl" />
+    <link name="${prefix}_wheel_link">
+      <visual>
+        <geometry>
+          <mesh filename="${mesh_path}" />
+        </geometry>
+        <material name="Grey" />
+      </visual>
+      <collision>
+        <geometry>
+          <mesh filename="${mesh_path}" />
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" />
+        <mass value="340e-3" />
+        <inertia ixx="2.758e-4" ixy="0" ixz="0"
+          iyy="2.758e-4" iyz="0" izz="4.577e-4" />
+      </inertial>
+    </link>
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <xacro:insert_block name="joint_origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${prefix}_wheel_link" />
+    </joint>
+
+    <transmission name="${prefix}_wheel_trans">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="${prefix}_wheel_joint">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${prefix}_wheel_motor">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+
+    <gazebo reference="${prefix}_wheel_link">
+      <material>Gazebo/Gray</material>
+      <mu1 value="1" />
+      <mu2 value="1" />
+    </gazebo>
+  </xacro:macro>
+</robot>

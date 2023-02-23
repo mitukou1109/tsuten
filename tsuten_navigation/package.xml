@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+  <name>tsuten_navigation</name>
+  <version>1.0.0</version>
+  <description>Package for Tsuten navigation.</description>
+  <maintainer email="mitukou1109@gmail.com">Mitsuhiro
+    Sakamoto</maintainer>
+
+  <license>
+    MIT</license>
+
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+
+  <exec_depend>navigation</exec_depend>
+  <exec_depend>teb_local_planner</exec_depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

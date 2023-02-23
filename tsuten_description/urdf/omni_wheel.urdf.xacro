@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="omni_wheel_mass" value="350.0e-3" />
+  <xacro:property name="wheel_radius" value="25.0e-3" />
+  <xacro:property name="wheel_length" value="10.0e-3" />
+  <xacro:property name="wheel_mass" value="50.0e-3" />
+  <xacro:property name="number_of_barrels" value="8" />
+  <xacro:property name="barrel_radius" value="7.50e-3" />
+  <xacro:property name="barrel_length" value="25.0e-3" />
+  <xacro:property name="barrel_loop_radius" value="23.1e-3" />
+  <xacro:property name="barrel_mass" value="${(omni_wheel_mass-wheel_mass)/number_of_barrels}" />
+
+  <xacro:macro name="rotor"
+    params="prefix parent radius length mass color damping_factor *joint_origin">
+    <link name="${prefix}_link">
+      <visual>
+        <geometry>
+          <cylinder radius="${radius}" length="${length}" />
+        </geometry>
+        <material name="${color}" />
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="${radius}" length="${length}" />
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 0" />
+        <mass value="${mass}" />
+        <inertia ixx="${mass*(radius**2/4+length**2/12)}" ixy="0" ixz="0"
+          iyy="${mass*(radius**2/4+length**2/12)}" iyz="0"
+          izz="${mass*radius**2/2}" />
+      </inertial>
+    </link>
+    <joint name="${prefix}_joint" type="continuous">
+      <xacro:insert_block name="joint_origin" />
+      <axis xyz="0 0 1" />
+      <parent link="${parent}" />
+      <child link="${prefix}_link" />
+    </joint>
+
+    <gazebo reference="${prefix}_link">
+      <material>
+        Gazebo/${color}</material>
+      <mu1 value="10000" />
+      <mu2 value="10000" />
+      <kp value="1000000" />
+      <kd value="100000" />
+      <dampingFactor value="${damping_factor}" />
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="barrel_loop" params="prefix parent n r z t_0 i">
+    <xacro:property name="dt" value="${2*pi/n}" />
+    <xacro:rotor prefix="${prefix}_barrel_${n-i}" parent="${parent}" radius="${barrel_radius}"
+      length="${barrel_length}" mass="${barrel_mass}" color="Black" damping_factor="0.1">
+      <origin xyz="${r*cos((n-i-1)*dt + t_0)} ${r*sin((n-i-1)*dt + t_0)} ${z}"
+        rpy="${pi/2} 0 ${(n-i-1)*dt + t_0}" />
+    </xacro:rotor>
+    <xacro:if value="${i}">
+      <xacro:barrel_loop prefix="${prefix}" parent="${parent}" n="${n}" r="${r}" z="${z}"
+        t_0="${t_0}" i="${i-1}" />
+    </xacro:if>
+  </xacro:macro>
+
+  <xacro:macro name="omni_wheel" params="prefix parent *joint_origin">
+    <xacro:rotor prefix="${prefix}_wheel" parent="${parent}" radius="${wheel_radius}"
+      length="${wheel_length}" mass="${wheel_mass}" color="White" damping_factor="0.3">
+      <xacro:insert_block name="joint_origin" />
+    </xacro:rotor>
+
+    <xacro:barrel_loop prefix="${prefix}_front" parent="${prefix}_wheel_link"
+      n="${number_of_barrels//2}"
+      r="${barrel_loop_radius}"
+      z="${wheel_length/2}" t_0="0" i="${number_of_barrels//2-1}" />
+    <xacro:barrel_loop prefix="${prefix}_back" parent="${prefix}_wheel_link"
+      n="${number_of_barrels//2}"
+      r="${barrel_loop_radius}"
+      z="-${wheel_length/2}" t_0="${2*pi/(number_of_barrels/2)/2}" i="${number_of_barrels//2-1}" />
+
+    <transmission name="${prefix}_wheel_trans">
+      <type>
+        transmission_interface/SimpleTransmission</type>
+      <joint name="${prefix}_wheel_joint">
+        <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="${prefix}_wheel_motor">
+        <hardwareInterface>
+          hardware_interface/VelocityJointInterface</hardwareInterface>
+        <mechanicalReduction>1</mechanicalReduction>
+      </actuator>
+    </transmission>
+  </xacro:macro>
+</robot>

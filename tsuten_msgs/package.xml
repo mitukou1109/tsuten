@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+  <name>tsuten_msgs</name>
+  <version>1.0.0</version>
+  <description>Message definitions for Tsuten</description>
+  <maintainer email="mitukou1109@gmail.com">Mitsuhiro Sakamoto</maintainer>
+
+  <license>MIT</license>
+
+  <depend>actionlib</depend>
+  <depend>dynamic_reconfigure</depend>
+  <depend>message_generation</depend>
+  <depend>std_msgs</depend>
+
+  <exec_depend>message_runtime</exec_depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

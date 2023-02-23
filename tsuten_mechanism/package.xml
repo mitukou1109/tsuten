@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+  <name>tsuten_mechanism</name>
+  <version>1.0.0</version>
+  <description>Implements mechanism control of Tsuten.</description>
+  <maintainer email="mitukou1109@gmail.com">Mitsuhiro Sakamoto</maintainer>
+
+  <license>MIT</license>
+
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>tsuten_msgs</depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

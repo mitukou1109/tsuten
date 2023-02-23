@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package format="2">
+  <name>tsuten</name>
+  <version>1.0.0</version>
+  <description>Metapackage for Tsuten control.</description>
+
+  <maintainer email="mitukou1109@gmail.com">Mitsuhiro
+    Sakamoto</maintainer>
+
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <exec_depend>tsuten_behavior</exec_depend>
+  <exec_depend>tsuten_description</exec_depend>
+  <exec_depend>tsuten_navigation</exec_depend>
+
+  <export>
+    <metapackage />
+  </export>
+</package>
