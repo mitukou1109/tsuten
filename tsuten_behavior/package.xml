@@ -7,10 +7,21 @@
 
   <license>MIT</license>
 
+  <build_depend>qtbase5-dev</build_depend>
+
   <depend>actionlib</depend>
   <depend>roscpp</depend>
+  <depend>rviz</depend>
   <depend>tsuten_mechanism</depend>
   <depend>tsuten_msgs</depend>
 
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
+
   <buildtool_depend>catkin</buildtool_depend>
+
+  <export>
+    <rviz plugin="${prefix}/behavior_control_panel_plugin.xml" />
+  </export>
 </package>
