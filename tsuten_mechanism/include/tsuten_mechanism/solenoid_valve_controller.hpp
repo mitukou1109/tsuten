@@ -2,25 +2,28 @@
 
 #include <ros/ros.h>
 
-class SolenoidValveController
+namespace tsuten_mechanism
 {
-public:
-  enum class State : bool
+  class SolenoidValveController
   {
-    OFF = false,
-    ON = true
+  public:
+    enum class State : bool
+    {
+      OFF = false,
+      ON = true
+    };
+
+    SolenoidValveController(const std::string &valve_name);
+
+    void setState(State state);
+
+    State getState();
+
+  private:
+    void publishState();
+
+    ros::Publisher valve_state_pub_;
+
+    State valve_state_;
   };
-
-  SolenoidValveController(const std::string &valve_name);
-
-  void setState(State state);
-
-  State getState();
-
-private:
-  void publishState();
-
-  ros::Publisher valve_state_pub_;
-
-  State valve_state_;
-};
+} // namespace tsuten_mechanism

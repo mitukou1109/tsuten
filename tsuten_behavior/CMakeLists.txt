@@ -4,6 +4,8 @@ project(tsuten_behavior)
 find_package(catkin REQUIRED
   COMPONENTS
     actionlib
+    interactive_markers
+    move_base_msgs
     roscpp
     rviz
     tsuten_mechanism
@@ -21,12 +23,29 @@ add_definitions(-DQT_NO_KEYWORDS)
 catkin_package(
   CATKIN_DEPENDS
     actionlib
+    interactive_markers
+    move_base_msgs
     roscpp
     rviz
     tsuten_mechanism
     tsuten_msgs
   INCLUDE_DIRS include
   LIBRARIES behavior_control_panel
+)
+
+add_library(behavior_control_panel
+  include/tsuten_behavior/behavior_control_panel.h
+  src/behavior_control_panel.cpp
+  src/behavior_control_panel_ui.cpp
+)
+target_include_directories(behavior_control_panel
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+target_link_libraries(behavior_control_panel
+  ${catkin_LIBRARIES}
+  ${QT_LIBRARIES}
 )
 
 add_executable(behavior_server
@@ -38,22 +57,21 @@ add_dependencies(behavior_server
 )
 target_include_directories(behavior_server
   PUBLIC
+    include
     ${catkin_INCLUDE_DIRS}
 )
 target_link_libraries(behavior_server
   ${catkin_LIBRARIES}
 )
 
-add_library(behavior_control_panel
-  include/tsuten_behavior/behavior_control_panel.h
-  src/behavior_control_panel.cpp
+add_executable(behavior_visualizer
+  src/behavior_visualizer.cpp
 )
-target_include_directories(behavior_control_panel
+target_include_directories(behavior_visualizer
   PUBLIC
     include
     ${catkin_INCLUDE_DIRS}
 )
-target_link_libraries(behavior_control_panel
+target_link_libraries(behavior_visualizer
   ${catkin_LIBRARIES}
-  ${QT_LIBRARIES}
 )

@@ -4,8 +4,7 @@
 #include <rviz/panel.h>
 
 #include <tsuten_behavior/behavior_control_panel_ui.h>
-#include <tsuten_msgs/ShootOnTable.h>
-#include <tsuten_msgs/ResetShooter.h>
+#include <tsuten_behavior/constants.hpp>
 #include <tsuten_msgs/PerformAction.h>
 #endif
 
@@ -21,37 +20,17 @@ namespace tsuten_behavior
   private:
     void resetAllShooters();
 
-    void shootOnTable(BehaviorControlPanelUI::TableID table_id);
+    void shootOnTable(TableID table_id);
 
     void startPerformance();
 
     void stopPerformance();
 
-    const std::unordered_map<BehaviorControlPanelUI::TableID, uint8_t>
-        TABLE_ID_TO_SHOOT_ON_TABLE_REQUEST_TABLE_ID = {
-            {BehaviorControlPanelUI::TableID::DUAL_TABLE_UPPER,
-             tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_UPPER},
-            {BehaviorControlPanelUI::TableID::DUAL_TABLE_LOWER,
-             tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_LOWER},
-            {BehaviorControlPanelUI::TableID::MOVABLE_TABLE_1200,
-             tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1200},
-            {BehaviorControlPanelUI::TableID::MOVABLE_TABLE_1500,
-             tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1500},
-            {BehaviorControlPanelUI::TableID::MOVABLE_TABLE_1800,
-             tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1800}};
+    static const std::unordered_map<TableID, uint8_t>
+        TABLE_ID_TO_SHOOT_ON_TABLE_REQUEST_TABLE_ID;
 
-    const std::unordered_map<BehaviorControlPanelUI::TableID, uint8_t>
-        TABLE_ID_TO_PERFORM_GOAL_TABLE_ID = {
-            {BehaviorControlPanelUI::TableID::DUAL_TABLE_UPPER,
-             tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER},
-            {BehaviorControlPanelUI::TableID::DUAL_TABLE_LOWER,
-             tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER},
-            {BehaviorControlPanelUI::TableID::MOVABLE_TABLE_1200,
-             tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200},
-            {BehaviorControlPanelUI::TableID::MOVABLE_TABLE_1500,
-             tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500},
-            {BehaviorControlPanelUI::TableID::MOVABLE_TABLE_1800,
-             tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800}};
+    static const std::unordered_map<TableID, uint8_t>
+        TABLE_ID_TO_PERFORM_GOAL_TABLE_ID;
 
     ros::NodeHandle behavior_server_nh_;
 

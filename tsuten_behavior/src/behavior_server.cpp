@@ -1,20 +1,21 @@
-#include <unordered_map>
+#include <tsuten_behavior/behavior_server.hpp>
 
-#include <ros/ros.h>
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/server/simple_action_server.h>
-#include <move_base_msgs/MoveBaseAction.h>
-
-#include <tsuten_mechanism/bottle_shooter_controller.hpp>
-#include <tsuten_msgs/PerformAction.h>
 #include <tsuten_msgs/ResetShooter.h>
 #include <tsuten_msgs/ShootBottle.h>
-#include <tsuten_msgs/ShootOnTable.h>
 
-class BehaviorServer
+namespace tsuten_behavior
 {
-public:
-  BehaviorServer()
+  const std::array<BehaviorServer::ShooterParameter,
+                   static_cast<std::size_t>(ShooterID::NUM_OF_SHOOTERS)>
+      BehaviorServer::SHOOTER_PARAMETERS = {
+          {{ShooterID::DUAL_TABLE_UPPER_L, "dual_table_upper_left_shooter", 0.5},
+           {ShooterID::DUAL_TABLE_UPPER_R, "dual_table_upper_right_shooter", 0.5},
+           {ShooterID::DUAL_TABLE_LOWER, "dual_table_lower_shooter", 0.5},
+           {ShooterID::MOVABLE_TABLE_1200, "movable_table_1200_shooter", 0.5},
+           {ShooterID::MOVABLE_TABLE_1500, "movable_table_1500_shooter", 0.5},
+           {ShooterID::MOVABLE_TABLE_1800, "movable_table_1800_shooter", 0.5}}};
+
+  BehaviorServer::BehaviorServer()
       : pnh_("~"),
         perform_action_server_(pnh_, "perform", false),
         move_base_action_client_("move_base"),
@@ -30,8 +31,7 @@ public:
       auto shoot_bottle_service_server = pnh_.advertiseService<tsuten_msgs::ShootBottleRequest,
                                                                tsuten_msgs::ShootBottleResponse>(
           shooter_param.name + "/shoot_bottle",
-          [this, shooter_param](tsuten_msgs::ShootBottleRequest &,
-                                tsuten_msgs::ShootBottleResponse &)
+          [this, shooter_param](auto &, auto &)
           { shooters_.at(shooter_param.id).shootBottle(); return true; });
 
       shoot_bottle_service_servers_.insert({shooter_param.id, shoot_bottle_service_server});
@@ -43,13 +43,15 @@ public:
     reset_shooter_service_server_ = pnh_.advertiseService<tsuten_msgs::ResetShooterRequest,
                                                           tsuten_msgs::ResetShooterResponse>(
         "reset_all_shooters",
-        [this](tsuten_msgs::ResetShooterRequest &, tsuten_msgs::ResetShooterResponse &)
+        [this](auto &, auto &)
         { resetAllShooters(); return true; });
 
     perform_action_server_.registerGoalCallback(
-        std::bind(&BehaviorServer::performActionGoalCB, this));
+        std::bind(&BehaviorServer::acceptPerformGoal, this));
+
     perform_action_server_.registerPreemptCallback(
-        std::bind(&BehaviorServer::performActionPreemptCB, this));
+        std::bind(&BehaviorServer::preemptPerformAction, this));
+
     perform_action_server_.start();
 
     if (!move_base_action_client_.waitForServer(ros::Duration(3.0)))
@@ -61,14 +63,13 @@ public:
                                                              { launchPerformThread(); });
   }
 
-  ~BehaviorServer()
+  BehaviorServer::~BehaviorServer()
   {
     perform_thread_->interrupt();
     launch_perform_thread_->interrupt();
   }
 
-private:
-  void performThread()
+  void BehaviorServer::performThread()
   {
     std::vector<uint8_t> tables;
     auto isDirectedToPerformAt = [&tables](uint8_t table)
@@ -117,7 +118,7 @@ private:
     ROS_INFO("Performance completed");
   }
 
-  void launchPerformThread()
+  void BehaviorServer::launchPerformThread()
   {
     while (pnh_.ok())
     {
@@ -137,7 +138,7 @@ private:
     }
   }
 
-  void performActionGoalCB()
+  void BehaviorServer::acceptPerformGoal()
   {
     {
       boost::lock_guard<boost::mutex> lock(mutex_);
@@ -148,7 +149,7 @@ private:
     is_goal_available_cv_.notify_all();
   }
 
-  void performActionPreemptCB()
+  void BehaviorServer::preemptPerformAction()
   {
     {
       boost::lock_guard<boost::mutex> lock(mutex_);
@@ -163,7 +164,7 @@ private:
     resetAllShooters();
   }
 
-  bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res)
+  bool BehaviorServer::shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res)
   {
     static ros::Timer dual_table_upper_shooter_timer_;
 
@@ -201,70 +202,20 @@ private:
     return true;
   }
 
-  void resetAllShooters()
+  void BehaviorServer::resetAllShooters()
   {
     for (auto &shooter : shooters_)
     {
       shooter.second.resetShooter();
     }
   }
-
-  enum class ShooterID : std::size_t
-  {
-    DUAL_TABLE_UPPER_L,
-    DUAL_TABLE_UPPER_R,
-    DUAL_TABLE_LOWER,
-    MOVABLE_TABLE_1200,
-    MOVABLE_TABLE_1500,
-    MOVABLE_TABLE_1800,
-    NUM_OF_SHOOTERS
-  };
-
-  struct ShooterParameter
-  {
-    ShooterID id;
-    std::string name;
-    double valve_on_duration;
-  };
-
-  const std::array<ShooterParameter, static_cast<std::size_t>(ShooterID::NUM_OF_SHOOTERS)>
-      SHOOTER_PARAMETERS = {
-          {{ShooterID::DUAL_TABLE_UPPER_L, "dual_table_upper_left_shooter", 0.5},
-           {ShooterID::DUAL_TABLE_UPPER_R, "dual_table_upper_right_shooter", 0.5},
-           {ShooterID::DUAL_TABLE_LOWER, "dual_table_lower_shooter", 0.5},
-           {ShooterID::MOVABLE_TABLE_1200, "movable_table_1200_shooter", 0.5},
-           {ShooterID::MOVABLE_TABLE_1500, "movable_table_1500_shooter", 0.5},
-           {ShooterID::MOVABLE_TABLE_1800, "movable_table_1800_shooter", 0.5}}};
-
-  ros::NodeHandle pnh_;
-
-  ros::ServiceServer reset_shooter_service_server_;
-  std::unordered_map<ShooterID, ros::ServiceServer> shoot_bottle_service_servers_;
-  ros::ServiceServer shoot_on_table_service_server_;
-
-  actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> move_base_action_client_;
-
-  actionlib::SimpleActionServer<tsuten_msgs::PerformAction> perform_action_server_;
-
-  std::unordered_map<ShooterID, BottleShooterController> shooters_;
-
-  tsuten_msgs::PerformGoalConstPtr perform_goal_;
-
-  boost::condition_variable is_goal_available_cv_;
-
-  bool is_goal_available_;
-
-  boost::mutex mutex_;
-
-  std::unique_ptr<boost::thread> launch_perform_thread_;
-  std::unique_ptr<boost::thread> perform_thread_;
-};
+} // namespace tsuten_behavior
 
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "behavior_server");
 
-  BehaviorServer behavior_server;
+  tsuten_behavior::BehaviorServer behavior_server;
 
   ros::spin();
 
