@@ -1,0 +1,8 @@
+uint8 table
+
+uint8 DUAL_TABLE_UPPER = 0
+uint8 DUAL_TABLE_LOWER = 1
+uint8 MOVABLE_TABLE_1200 = 2
+uint8 MOVABLE_TABLE_1500 = 3
+uint8 MOVABLE_TABLE_1800 = 4
+---

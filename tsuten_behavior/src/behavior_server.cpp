@@ -7,6 +7,9 @@
 
 #include <tsuten_mechanism/bottle_shooter_controller.hpp>
 #include <tsuten_msgs/PerformAction.h>
+#include <tsuten_msgs/ResetShooter.h>
+#include <tsuten_msgs/ShootBottle.h>
+#include <tsuten_msgs/ShootOnTable.h>
 
 class BehaviorServer
 {
@@ -21,20 +24,38 @@ public:
     {
       shooters_.emplace(std::piecewise_construct,
                         std::forward_as_tuple(shooter_param.id),
-                        std::forward_as_tuple(
-                            shooter_param.name, shooter_param.valve_on_duration));
+                        std::forward_as_tuple(shooter_param.name,
+                                              shooter_param.valve_on_duration));
+
+      auto shoot_bottle_service_server = pnh_.advertiseService<tsuten_msgs::ShootBottleRequest,
+                                                               tsuten_msgs::ShootBottleResponse>(
+          shooter_param.name + "/shoot_bottle",
+          [this, shooter_param](tsuten_msgs::ShootBottleRequest &,
+                                tsuten_msgs::ShootBottleResponse &)
+          { shooters_.at(shooter_param.id).shootBottle(); return true; });
+
+      shoot_bottle_service_servers_.insert({shooter_param.id, shoot_bottle_service_server});
     }
 
-    if (!move_base_action_client_.waitForServer(ros::Duration(5.0)))
-    {
-      ROS_ERROR("move_base action server timeout");
-    }
+    shoot_on_table_service_server_ = pnh_.advertiseService(
+        "shoot_on_table", &BehaviorServer::shootOnTable, this);
+
+    reset_shooter_service_server_ = pnh_.advertiseService<tsuten_msgs::ResetShooterRequest,
+                                                          tsuten_msgs::ResetShooterResponse>(
+        "reset_all_shooters",
+        [this](tsuten_msgs::ResetShooterRequest &, tsuten_msgs::ResetShooterResponse &)
+        { resetAllShooters(); return true; });
 
     perform_action_server_.registerGoalCallback(
         std::bind(&BehaviorServer::performActionGoalCB, this));
     perform_action_server_.registerPreemptCallback(
         std::bind(&BehaviorServer::performActionPreemptCB, this));
     perform_action_server_.start();
+
+    if (!move_base_action_client_.waitForServer(ros::Duration(3.0)))
+    {
+      ROS_ERROR("move_base action server timeout");
+    }
 
     launch_perform_thread_ = std::make_unique<boost::thread>([this]
                                                              { launchPerformThread(); });
@@ -139,10 +160,48 @@ private:
     perform_action_server_.setPreempted();
     ROS_INFO("Performance canceled");
 
-    resetShooters();
+    resetAllShooters();
   }
 
-  void resetShooters()
+  bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res)
+  {
+    static ros::Timer dual_table_upper_shooter_timer_;
+
+    switch (req.table)
+    {
+    case tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_UPPER:
+      shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
+      dual_table_upper_shooter_timer_ = pnh_.createTimer(
+          ros::Duration(1.0),
+          [this](const ros::TimerEvent &)
+          { shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle(); },
+          true);
+      break;
+
+    case tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_LOWER:
+      shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle();
+      break;
+
+    case tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1200:
+      shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle();
+      break;
+
+    case tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1500:
+      shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle();
+      break;
+
+    case tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1800:
+      shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle();
+      break;
+
+    default:
+      break;
+    }
+
+    return true;
+  }
+
+  void resetAllShooters()
   {
     for (auto &shooter : shooters_)
     {
@@ -178,6 +237,10 @@ private:
            {ShooterID::MOVABLE_TABLE_1800, "movable_table_1800_shooter", 0.5}}};
 
   ros::NodeHandle pnh_;
+
+  ros::ServiceServer reset_shooter_service_server_;
+  std::unordered_map<ShooterID, ros::ServiceServer> shoot_bottle_service_servers_;
+  ros::ServiceServer shoot_on_table_service_server_;
 
   actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> move_base_action_client_;
 

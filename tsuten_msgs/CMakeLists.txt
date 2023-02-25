@@ -16,6 +16,7 @@ add_action_files(FILES
 add_service_files(FILES
   ResetShooter.srv
   ShootBottle.srv  
+  ShootOnTable.srv
 )
 
 generate_messages(DEPENDENCIES
