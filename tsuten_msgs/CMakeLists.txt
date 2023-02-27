@@ -6,6 +6,7 @@ find_package(catkin REQUIRED
     actionlib
     dynamic_reconfigure
     message_generation
+    rospy
     std_msgs
 )
 
@@ -24,10 +25,15 @@ generate_messages(DEPENDENCIES
   std_msgs
 )
 
+generate_dynamic_reconfigure_options(
+  cfg/BehaviorServer.cfg
+)
+
 catkin_package(
   CATKIN_DEPENDS
     actionlib
     dynamic_reconfigure
     message_runtime
+    rospy
     std_msgs
 )

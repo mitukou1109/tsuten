@@ -5,6 +5,7 @@
 #include <ros/ros.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
+#include <dynamic_reconfigure/server.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <tf2/utils.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -12,6 +13,7 @@
 
 #include <tsuten_behavior/constants.hpp>
 #include <tsuten_mechanism/bottle_shooter_controller.hpp>
+#include <tsuten_msgs/BehaviorServerConfig.h>
 #include <tsuten_msgs/PerformAction.h>
 #include <tsuten_msgs/ShootOnTable.h>
 
@@ -53,6 +55,8 @@ namespace tsuten_behavior
 
     void resetAllShooters();
 
+    void reconfigureParameters(tsuten_behavior::BehaviorServerConfig &config, uint32_t level);
+
     ros::NodeHandle pnh_;
 
     std::unordered_map<TableID, tf2::Transform> table_tfs_;
@@ -72,7 +76,7 @@ namespace tsuten_behavior
 
     tf2_ros::TransformBroadcaster tf_broadcaster_;
 
-    actionlib::SimpleActionServer<tsuten_msgs::PerformAction> perform_action_server_;
+    dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
 
     std::unordered_map<ShooterID, tsuten_mechanism::BottleShooterController> shooters_;
 

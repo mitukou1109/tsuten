@@ -36,13 +36,7 @@ namespace tsuten_behavior
       auto &table_id = table_tf_pair.first;
       auto &table_position = table_tf_pair.second.getOrigin();
 
-      auto shoot_bottle_service_server = pnh_.advertiseService<tsuten_msgs::ShootBottleRequest,
-                                                               tsuten_msgs::ShootBottleResponse>(
-          shooter_param.name + "/shoot_bottle",
-          [this, shooter_param](auto &, auto &)
-          { shooters_.at(shooter_param.id).shootBottle(); return true; });
-
-      shoot_bottle_service_servers_.insert({shooter_param.id, shoot_bottle_service_server});
+      pnh_.setParam(TABLE_NAMES.at(table_id) + "_position_y", table_position.y());
     }
 
     pnh_.param("global_frame", global_frame_, std::string("map"));
@@ -92,6 +86,8 @@ namespace tsuten_behavior
     {
       ROS_ERROR("move_base action server timeout");
     }
+
+    reconfigure_server_.setCallback(boost::bind(&BehaviorServer::reconfigureParameters, this, _1, _2));
 
     launch_perform_thread_ = std::make_unique<boost::thread>([this]
                                                              { launchPerformThread(); });
@@ -334,6 +330,20 @@ namespace tsuten_behavior
     {
       shooter.second.resetShooter();
     }
+  }
+
+  void BehaviorServer::reconfigureParameters(
+      tsuten_behavior::BehaviorServerConfig &config, uint32_t level)
+  {
+    table_tfs_.at(TableID::MOVABLE_TABLE_1200)
+        .getOrigin()
+        .setY(config.movable_table_1200_position_y);
+    table_tfs_.at(TableID::MOVABLE_TABLE_1500)
+        .getOrigin()
+        .setY(config.movable_table_1500_position_y);
+    table_tfs_.at(TableID::MOVABLE_TABLE_1800)
+        .getOrigin()
+        .setY(config.movable_table_1800_position_y);
   }
 } // namespace tsuten_behavior
 

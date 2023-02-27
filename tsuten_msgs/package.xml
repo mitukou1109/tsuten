@@ -10,6 +10,7 @@
   <depend>actionlib</depend>
   <depend>dynamic_reconfigure</depend>
   <depend>message_generation</depend>
+  <depend>rospy</depend>
   <depend>std_msgs</depend>
 
   <exec_depend>message_runtime</exec_depend>
