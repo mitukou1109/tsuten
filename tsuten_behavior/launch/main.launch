@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
+  <rosparam file="$(find tsuten_behavior)/config/table_position.yaml" command="load" />
 
+  <!-- <include file="$(find tsuten_navigation)/launch/navigation.launch" /> -->
+
+  <node name="behavior_server" pkg="tsuten_behavior" type="behavior_server" output="screen" />
+
+  <node name="behavior_visualizer" pkg="tsuten_behavior" type="behavior_visualizer" output="screen" />
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tsuten_behavior)/rviz/main.rviz"
+    required="true" output="screen" />
 </launch>

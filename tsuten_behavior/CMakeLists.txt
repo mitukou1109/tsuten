@@ -4,12 +4,14 @@ project(tsuten_behavior)
 find_package(catkin REQUIRED
   COMPONENTS
     actionlib
-    interactive_markers
     move_base_msgs
     roscpp
     rviz
+    tf2
+    tf2_ros
     tsuten_mechanism
     tsuten_msgs
+    visualization_msgs
 )
 
 set(CMAKE_AUTOMOC ON)
@@ -23,12 +25,14 @@ add_definitions(-DQT_NO_KEYWORDS)
 catkin_package(
   CATKIN_DEPENDS
     actionlib
-    interactive_markers
     move_base_msgs
     roscpp
     rviz
+    tf2
+    tf2_ros
     tsuten_mechanism
     tsuten_msgs
+    visualization_msgs
   INCLUDE_DIRS include
   LIBRARIES behavior_control_panel
 )
