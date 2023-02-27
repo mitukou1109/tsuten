@@ -22,8 +22,8 @@ namespace tsuten_mechanism
   private:
     void publishState();
 
-    ros::Publisher valve_state_pub_;
-
     State valve_state_;
+
+    ros::Publisher valve_state_pub_;
   };
 } // namespace tsuten_mechanism

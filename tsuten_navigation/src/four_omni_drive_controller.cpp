@@ -11,11 +11,12 @@ namespace tsuten_navigation
     {
       ros::NodeHandle nh(""), pnh("~");
 
-      nh.param("wheel_radius", wheel_radius_, 100.0e-3);
       pnh.param("wheel_vels_topic", wheel_vels_topic_, std::string("wheel_vels"));
       pnh.param("cmd_vel_topic", cmd_vel_topic_, std::string("cmd_vel"));
+      nh.param("wheel_radius", wheel_radius_, 100.0e-3);
 
       wheel_vels_pub_ = nh.advertise<std_msgs::Float64MultiArray>(wheel_vels_topic_, 10);
+
       cmd_vel_sub_ = nh.subscribe(cmd_vel_topic_, 10, &FourOmniDriveController::cmdVelCallback, this);
     }
 
@@ -38,12 +39,14 @@ namespace tsuten_navigation
     }
 
     ros::Publisher wheel_vels_pub_;
+
     ros::Subscriber cmd_vel_sub_;
 
-    std::string wheel_vels_topic_;
-    std::string cmd_vel_topic_;
-
     double wheel_radius_;
+
+    std::string wheel_vels_topic_;
+
+    std::string cmd_vel_topic_;
   };
 } // namespace tsuten_navigation
 

@@ -1,6 +1,5 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
-#include <tf2/utils.h>
 #include <tf2_ros/transform_broadcaster.h>
 
 namespace tsuten_navigation
@@ -12,9 +11,10 @@ namespace tsuten_navigation
     {
       ros::NodeHandle nh(""), pnh("~");
 
+      pnh.param("odom_topic", odom_topic_, std::string("odom"));
       pnh.param("publish_rate", publish_rate_, 10.0);
 
-      odom_sub_ = nh.subscribe("odom", 10, &OdomTFPublisher::odomCallback, this);
+      odom_sub_ = nh.subscribe(odom_topic_, 10, &OdomTFPublisher::odomCallback, this);
 
       timer_ = nh.createTimer(ros::Rate(publish_rate_), &OdomTFPublisher::publishOdomTF, this);
 

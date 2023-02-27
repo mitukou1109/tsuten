@@ -20,8 +20,8 @@ namespace tsuten_mechanism
 
     void valveControlTimerCallback(const ros::TimerEvent &event);
 
-    ros::Timer valve_control_timer_;
-
     SolenoidValveController valve_controller_;
+
+    ros::Timer valve_control_timer_;
   };
 } // namespace tsuten_mechanism

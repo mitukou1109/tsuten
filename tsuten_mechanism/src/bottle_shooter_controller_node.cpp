@@ -12,6 +12,7 @@ int main(int argc, char **argv)
 
     std::string bottle_shooter_name =
         pnh.param("bottle_shooter_name", std::string("bottle_shooter"));
+
     double valve_on_duration = pnh.param("valve_on_duration", 0.5);
 
     tsuten_mechanism::BottleShooterController bottle_shooter_controller(bottle_shooter_name, valve_on_duration);
