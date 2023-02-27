@@ -120,13 +120,37 @@ namespace tsuten_behavior
     {
       tsuten_msgs::PerformGoal goal;
       goal.tables = tables;
-      perform_action_client_.sendGoal(goal);
+      perform_action_client_.sendGoal(goal,
+                                      [this](const auto &, const auto &)
+                                      { setUIState(UIState::IDLE); });
+
+      setUIState(UIState::BUSY);
     }
   }
 
   void BehaviorControlPanel::stopPerformance()
   {
     perform_action_client_.cancelAllGoals();
+
+    setUIState(UIState::IDLE);
+  }
+
+  void BehaviorControlPanel::setUIState(UIState state)
+  {
+    bool state_bool = static_cast<bool>(state);
+    auto widgets = ui_.getWidgets();
+
+    for (auto &table_check_box_pair : widgets.table_check_boxes)
+    {
+      table_check_box_pair.second->setCheckable(state_bool);
+    }
+    for (auto &shoot_bottle_button_pair : widgets.shoot_bottle_buttons)
+    {
+      shoot_bottle_button_pair.second->setEnabled(state_bool);
+    }
+    widgets.reset_all_shooters_button->setEnabled(state_bool);
+    widgets.start_performance_button->setEnabled(state_bool);
+    widgets.stop_performance_button->setEnabled(!state_bool);
   }
 } // namespace tsuten_behavior
 

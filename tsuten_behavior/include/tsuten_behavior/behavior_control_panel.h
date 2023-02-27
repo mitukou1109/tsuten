@@ -18,6 +18,12 @@ namespace tsuten_behavior
     BehaviorControlPanel(QWidget *parent = 0);
 
   private:
+    enum class UIState : bool
+    {
+      BUSY = false,
+      IDLE = true
+    };
+
     void resetAllShooters();
 
     void shootOnTable(TableID table_id);
@@ -25,6 +31,8 @@ namespace tsuten_behavior
     void startPerformance();
 
     void stopPerformance();
+
+    void setUIState(UIState state);
 
     static const std::unordered_map<TableID, uint8_t>
         TABLE_ID_TO_SHOOT_ON_TABLE_REQUEST_TABLE_ID;
@@ -34,11 +42,11 @@ namespace tsuten_behavior
 
     ros::NodeHandle behavior_server_nh_;
 
-    ros::ServiceClient reset_all_shooters_service_client_;
-    ros::ServiceClient shoot_on_table_service_client_;
-
     actionlib::SimpleActionClient<tsuten_msgs::PerformAction> perform_action_client_;
 
     BehaviorControlPanelUI ui_;
+
+    ros::ServiceClient reset_all_shooters_service_client_;
+    ros::ServiceClient shoot_on_table_service_client_;
   };
 } // namespace tsuten_behavior

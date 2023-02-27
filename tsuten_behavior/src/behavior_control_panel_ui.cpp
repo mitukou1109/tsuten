@@ -18,8 +18,13 @@ namespace tsuten_behavior
       auto &table_id = table_name_pair.first;
       auto &table_name = table_name_pair.second;
 
-      QCheckBox *table_checkbox = new QCheckBox;
-      table_checkbox->setStyleSheet(QString::fromStdString(
+      if (table_id == TableID::DUAL_TABLE)
+      {
+        continue;
+      }
+
+      QCheckBox *table_check_box = new QCheckBox;
+      table_check_box->setStyleSheet(QString::fromStdString(
           "QCheckBox::indicator:checked {image: url(" +
           image_dir_path + "/" +
           table_name + "_selected.png);}"
@@ -39,31 +44,40 @@ namespace tsuten_behavior
           image_dir_path + "/" +
           table_name + "_unselected_pressed.png);}"));
 
-      widgets_.table_check_boxes.insert({table_id, table_checkbox});
+      widgets_.table_check_boxes.insert({table_id, table_check_box});
 
       QPushButton *shoot_bottle_button = new QPushButton("Shoot");
 
       widgets_.shoot_bottle_buttons.insert({table_id, shoot_bottle_button});
 
-      if (table_id == TableID::DUAL_TABLE_UPPER || table_id == TableID::DUAL_TABLE_LOWER)
+      switch (table_id)
       {
-        dual_table_layout->insertWidget(static_cast<int>(table_id), table_checkbox);
-      }
-      else
-      {
-        tables_layout->addWidget(table_checkbox, 1, static_cast<int>(table_id) - 1,
+      case TableID::DUAL_TABLE_LOWER:
+        dual_table_layout->insertWidget(1, table_check_box);
+        break;
+      case TableID::DUAL_TABLE_UPPER:
+        dual_table_layout->insertWidget(0, table_check_box);
+        break;
+      default:
+        static const std::unordered_map<TableID, int> TABLE_CHECK_BOX_LAYOUT_COLUMNS = {
+            {TableID::MOVABLE_TABLE_1200, 1},
+            {TableID::MOVABLE_TABLE_1500, 2},
+            {TableID::MOVABLE_TABLE_1800, 3}};
+        tables_layout->addWidget(table_check_box, 1, TABLE_CHECK_BOX_LAYOUT_COLUMNS.at(table_id),
                                  Qt::AlignCenter | Qt::AlignBottom);
+        break;
       }
 
-      if (table_id == TableID::DUAL_TABLE_UPPER)
-      {
-        tables_layout->addWidget(shoot_bottle_button, 0, 0, Qt::AlignCenter);
-      }
-      else
-      {
-        tables_layout->addWidget(shoot_bottle_button, 2, static_cast<int>(table_id) - 1,
-                                 Qt::AlignCenter);
-      }
+      static const std::unordered_map<TableID, int> SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS = {
+          {TableID::DUAL_TABLE_LOWER, 0},
+          {TableID::DUAL_TABLE_UPPER, 0},
+          {TableID::MOVABLE_TABLE_1200, 1},
+          {TableID::MOVABLE_TABLE_1500, 2},
+          {TableID::MOVABLE_TABLE_1800, 3}};
+
+      tables_layout->addWidget(
+          shoot_bottle_button, (table_id == TableID::DUAL_TABLE_UPPER) ? 0 : 2,
+          SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS.at(table_id), Qt::AlignCenter);
     }
 
     widgets_.reset_all_shooters_button = new QPushButton("Reset all shooters");
