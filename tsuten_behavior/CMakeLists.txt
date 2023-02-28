@@ -4,9 +4,12 @@ project(tsuten_behavior)
 find_package(catkin REQUIRED
   COMPONENTS
     actionlib
+    jsk_rviz_plugins
     move_base_msgs
+    pluginlib
     roscpp
     rviz
+    std_msgs
     tf2
     tf2_ros
     tsuten_mechanism
@@ -25,9 +28,12 @@ add_definitions(-DQT_NO_KEYWORDS)
 catkin_package(
   CATKIN_DEPENDS
     actionlib
+    jsk_rviz_plugins
     move_base_msgs
+    pluginlib
     roscpp
     rviz
+    std_msgs
     tf2
     tf2_ros
     tsuten_mechanism

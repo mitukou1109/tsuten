@@ -10,9 +10,12 @@
   <build_depend>qtbase5-dev</build_depend>
 
   <depend>actionlib</depend>
+  <depend>jsk_rviz_plugins</depend>
   <depend>move_base_msgs</depend>
+  <depend>pluginlib</depend>
   <depend>roscpp</depend>
   <depend>rviz</depend>
+  <depend>std_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
   <depend>tsuten_mechanism</depend>
