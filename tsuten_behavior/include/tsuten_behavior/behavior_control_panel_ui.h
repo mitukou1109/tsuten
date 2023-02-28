@@ -44,6 +44,10 @@ namespace tsuten_behavior
     const Widgets &getWidgets() { return widgets_; }
 
   private:
+    static const std::unordered_map<TableID, int> TABLE_CHECK_BOX_LAYOUT_COLUMNS;
+
+    static const std::unordered_map<TableID, int> SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS;
+
     QWidget *parent_;
 
     QVBoxLayout *base_layout_;

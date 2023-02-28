@@ -4,6 +4,18 @@
 
 namespace tsuten_behavior
 {
+  const std::unordered_map<TableID, int> BehaviorControlPanelUI::TABLE_CHECK_BOX_LAYOUT_COLUMNS =
+      {{TableID::MOVABLE_TABLE_1200, 1},
+       {TableID::MOVABLE_TABLE_1500, 2},
+       {TableID::MOVABLE_TABLE_1800, 3}};
+
+  const std::unordered_map<TableID, int> BehaviorControlPanelUI::SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS =
+      {{TableID::DUAL_TABLE_LOWER, 0},
+       {TableID::DUAL_TABLE_UPPER, 0},
+       {TableID::MOVABLE_TABLE_1200, 1},
+       {TableID::MOVABLE_TABLE_1500, 2},
+       {TableID::MOVABLE_TABLE_1800, 3}};
+
   BehaviorControlPanelUI::BehaviorControlPanelUI(QWidget *parent) : parent_(parent)
   {
     std::string image_dir_path = ros::package::getPath("tsuten_behavior") + "/images";
@@ -59,21 +71,10 @@ namespace tsuten_behavior
         dual_table_layout->insertWidget(0, table_check_box);
         break;
       default:
-        static const std::unordered_map<TableID, int> TABLE_CHECK_BOX_LAYOUT_COLUMNS = {
-            {TableID::MOVABLE_TABLE_1200, 1},
-            {TableID::MOVABLE_TABLE_1500, 2},
-            {TableID::MOVABLE_TABLE_1800, 3}};
         tables_layout->addWidget(table_check_box, 1, TABLE_CHECK_BOX_LAYOUT_COLUMNS.at(table_id),
                                  Qt::AlignCenter | Qt::AlignBottom);
         break;
       }
-
-      static const std::unordered_map<TableID, int> SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS = {
-          {TableID::DUAL_TABLE_LOWER, 0},
-          {TableID::DUAL_TABLE_UPPER, 0},
-          {TableID::MOVABLE_TABLE_1200, 1},
-          {TableID::MOVABLE_TABLE_1500, 2},
-          {TableID::MOVABLE_TABLE_1800, 3}};
 
       tables_layout->addWidget(
           shoot_bottle_button, (table_id == TableID::DUAL_TABLE_UPPER) ? 0 : 2,

@@ -27,15 +27,9 @@ namespace tsuten_behavior
     ~BehaviorServer();
 
   private:
-    struct ShooterParameter
-    {
-      std::string name;
-      double valve_on_duration;
-    };
-
     static const std::unordered_map<TableID, tf2::Transform> DEFAULT_TABLE_TFS;
 
-    static const std::unordered_map<ShooterID, ShooterParameter> SHOOTER_PARAMETERS;
+    static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS_;
 
     void performThread();
 
@@ -50,6 +44,8 @@ namespace tsuten_behavior
     void publishTF(const ros::TimerEvent &event);
 
     geometry_msgs::TransformStamped createTableTFMsg(TableID table_id);
+
+    void initializeShooters();
 
     bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res);
 
@@ -77,6 +73,8 @@ namespace tsuten_behavior
     tf2_ros::TransformBroadcaster tf_broadcaster_;
 
     dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
+
+    std::unordered_map<ShooterID, double> shooter_valve_on_durations_;
 
     std::unordered_map<ShooterID, tsuten_mechanism::BottleShooterController> shooters_;
 
