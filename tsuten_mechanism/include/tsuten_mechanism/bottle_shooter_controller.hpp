@@ -9,11 +9,15 @@ namespace tsuten_mechanism
   class BottleShooterController
   {
   public:
-    BottleShooterController(const std::string &bottle_shooter_name, const double valve_on_duration);
+    BottleShooterController(const std::string &bottle_shooter_name,
+                            const double valve_on_duration);
 
-    void resetShooter();
+    BottleShooterController &resetShooter();
 
-    void shootBottle();
+    BottleShooterController &shootBottle();
+
+    BottleShooterController &waitUntilShootCompletes(
+        const ros::Duration &timeout = ros::Duration(0));
 
   private:
     using ValveState = SolenoidValveController::State;
@@ -21,6 +25,8 @@ namespace tsuten_mechanism
     void valveControlTimerCallback(const ros::TimerEvent &event);
 
     SolenoidValveController valve_controller_;
+
+    bool is_shooting_;
 
     ros::Timer valve_control_timer_;
   };

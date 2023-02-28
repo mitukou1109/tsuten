@@ -117,35 +117,35 @@ namespace tsuten_behavior
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER);
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-      shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle();
+      shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER);
-      shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle();
+      shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200);
-      shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle();
+      shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500);
-      shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle();
+      shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800);
-      shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle();
+      shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle().waitUntilShootCompletes();
     }
 
     ROS_INFO("Performance completed");
