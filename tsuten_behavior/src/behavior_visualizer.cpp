@@ -8,6 +8,7 @@
 
 #include <tsuten_behavior/constants.hpp>
 #include <tsuten_mechanism/solenoid_valve_controller.hpp>
+#include <tsuten_msgs/PerformAction.h>
 
 namespace tsuten_behavior
 {
@@ -16,9 +17,10 @@ namespace tsuten_behavior
   public:
     BehaviorVisualizer()
     {
-      initializeShooterStates();
-
       ros::NodeHandle behavior_server_nh("behavior_server");
+      ros::NodeHandle pnh("~");
+
+      initializeShooterStates();
 
       for (auto &shooter_name_pair : SHOOTER_NAMES)
       {
@@ -31,8 +33,6 @@ namespace tsuten_behavior
 
         shooter_state_subs_.insert({shooter_id, shooter_state_sub});
       }
-
-      ros::NodeHandle pnh("~");
 
       pnh.param("global_frame", global_frame_, std::string("map"));
       pnh.param("table_markers_publish_rate", table_markers_publish_rate_, 10.0);
@@ -50,6 +50,19 @@ namespace tsuten_behavior
       publish_table_markers_timer_ =
           pnh.createTimer(ros::Rate(table_markers_publish_rate_),
                           &BehaviorVisualizer::publishTableMarkers, this);
+
+      initializePerformFeedbackText();
+
+      perform_feedback_text_pub_ =
+          pnh.advertise<jsk_rviz_plugins::OverlayText>("perform_feedback_text", 10, true);
+
+      perform_feedback_sub_ =
+          behavior_server_nh.subscribe("perform/feedback", 10,
+                                       &BehaviorVisualizer::displayPerformFeedback, this);
+
+      perform_result_sub_ =
+          behavior_server_nh.subscribe("perform/result", 10,
+                                       &BehaviorVisualizer::hidePerformFeedback, this);
     }
 
   private:
@@ -189,6 +202,41 @@ namespace tsuten_behavior
       }
     }
 
+    void initializePerformFeedbackText()
+    {
+      perform_feedback_text_.width = 380;
+      perform_feedback_text_.height = 20;
+      perform_feedback_text_.left = 10;
+      perform_feedback_text_.top = 140;
+      perform_feedback_text_.bg_color.r = 0;
+      perform_feedback_text_.bg_color.g = 0;
+      perform_feedback_text_.bg_color.b = 0;
+      perform_feedback_text_.bg_color.a = 0.4;
+      perform_feedback_text_.fg_color.r = 0.1;
+      perform_feedback_text_.fg_color.g = 1.0;
+      perform_feedback_text_.fg_color.b = 1.0;
+      perform_feedback_text_.fg_color.a = 0.8;
+      perform_feedback_text_.line_width = 1;
+      perform_feedback_text_.text_size = 10;
+      perform_feedback_text_.font = "Ubuntu";
+    }
+
+    void displayPerformFeedback(const tsuten_msgs::PerformActionFeedback &feedback)
+    {
+      perform_feedback_text_.action = jsk_rviz_plugins::OverlayText::ADD;
+      perform_feedback_text_.text =
+          "Perform status: " + PERFORM_STATUS_TEXTS.at(feedback.feedback.status);
+
+      perform_feedback_text_pub_.publish(perform_feedback_text_);
+    }
+
+    void hidePerformFeedback(const tsuten_msgs::PerformActionResult &result)
+    {
+      perform_feedback_text_.action = jsk_rviz_plugins::OverlayText::DELETE;
+
+      perform_feedback_text_pub_.publish(perform_feedback_text_);
+    }
+
     ros::Publisher shooter_state_text_pub_;
 
     std::unordered_map<ShooterID, ros::Subscriber> shooter_state_subs_;
@@ -202,6 +250,13 @@ namespace tsuten_behavior
     ros::Timer publish_table_markers_timer_;
 
     std::unordered_map<TableID, visualization_msgs::Marker> table_markers_;
+
+    ros::Publisher perform_feedback_text_pub_;
+
+    ros::Subscriber perform_feedback_sub_;
+    ros::Subscriber perform_result_sub_;
+
+    jsk_rviz_plugins::OverlayText perform_feedback_text_;
 
     std::string global_frame_;
 

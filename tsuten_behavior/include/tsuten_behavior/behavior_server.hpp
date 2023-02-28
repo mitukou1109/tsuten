@@ -35,6 +35,8 @@ namespace tsuten_behavior
 
     void launchPerformThread();
 
+    void publishPerformFeedback(uint8_t status);
+
     void acceptPerformGoal();
 
     void preemptPerformAction();

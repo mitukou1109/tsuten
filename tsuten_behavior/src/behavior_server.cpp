@@ -114,6 +114,7 @@ namespace tsuten_behavior
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
     {
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER);
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle();
@@ -122,24 +123,28 @@ namespace tsuten_behavior
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER);
       shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200);
       shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500);
       shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800))
     {
       boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800);
       shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle();
     }
 
@@ -166,6 +171,15 @@ namespace tsuten_behavior
 
       is_goal_available_ = false;
     }
+  }
+
+  void BehaviorServer::publishPerformFeedback(uint8_t status)
+  {
+    tsuten_msgs::PerformFeedback feedback;
+    feedback.status = status;
+
+    perform_action_server_.publishFeedback(feedback);
+    ROS_INFO("Perform status: %s", PERFORM_STATUS_TEXTS.at(status).c_str());
   }
 
   void BehaviorServer::acceptPerformGoal()
