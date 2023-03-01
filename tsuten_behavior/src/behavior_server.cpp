@@ -32,20 +32,10 @@ namespace tsuten_behavior
   {
     initializeTableTFs();
 
-    for (auto &table_tf_pair : table_tfs_)
-    {
-      auto &table_id = table_tf_pair.first;
-      auto &table_position = table_tf_pair.second.getOrigin();
-
-      pnh_.setParam(TABLE_NAMES.at(table_id) + "_position_y", table_position.y());
-    }
-
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
 
     static_tf_broadcaster_.sendTransform(createTableTFMsg(TableID::DUAL_TABLE));
-
-    publish_tf_timer_ = pnh_.createTimer(ros::Rate(tf_publish_rate_), &BehaviorServer::publishTF, this);
 
     initializeShooters();
 
@@ -86,6 +76,8 @@ namespace tsuten_behavior
     }
 
     reconfigure_server_.setCallback(boost::bind(&BehaviorServer::reconfigureParameters, this, _1, _2));
+
+    publish_tf_timer_ = pnh_.createTimer(ros::Rate(tf_publish_rate_), &BehaviorServer::publishTF, this);
 
     launch_perform_thread_ = std::make_unique<boost::thread>([this]
                                                              { launchPerformThread(); });
@@ -271,6 +263,18 @@ namespace tsuten_behavior
 
       table_tf.getOrigin().setZ(TABLE_SIZES.at(table_id).at(2) / 2); // for visualization
     }
+
+    BehaviorServerConfig config;
+    config.movable_table_1200_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1200)
+                                               .getOrigin()
+                                               .getY();
+    config.movable_table_1500_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1500)
+                                               .getOrigin()
+                                               .getY();
+    config.movable_table_1800_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1800)
+                                               .getOrigin()
+                                               .getY();
+    reconfigure_server_.updateConfig(config);
   }
 
   void BehaviorServer::publishTF(const ros::TimerEvent &event)
