@@ -2,6 +2,7 @@
 <launch>
   <arg name="map_file" default="$(find tsuten_navigation)/map/field.yaml" />
   <arg name="move_base_config_dir" />
+  <arg name="config_dir" />
   <arg name="wheel_radius" />
   <arg name="wheel_vels_topic" />
 
@@ -14,14 +15,18 @@
   </node>
 
   <node name="move_base" pkg="move_base" type="move_base" output="screen" clear_params="true">
-    <rosparam file="$(arg move_base_config_dir)/move_base_params.yaml" command="load" />
-    <rosparam file="$(arg move_base_config_dir)/costmap_common_params.yaml" command="load"
+    <rosparam file="$(arg config_dir)/move_base/move_base_params.yaml" command="load" />
+    <rosparam file="$(arg config_dir)/move_base/costmap_common_params.yaml"
+      command="load"
       ns="global_costmap" />
-    <rosparam file="$(arg move_base_config_dir)/costmap_common_params.yaml" command="load"
+    <rosparam file="$(arg config_dir)/move_base/costmap_common_params.yaml"
+      command="load"
       ns="local_costmap" />
-    <rosparam file="$(arg move_base_config_dir)/global_costmap_params.yaml" command="load" />
-    <rosparam file="$(arg move_base_config_dir)/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(arg move_base_config_dir)/base_local_planner_params.yaml" command="load" />
+    <rosparam file="$(arg config_dir)/move_base/global_costmap_params.yaml"
+      command="load" />
+    <rosparam file="$(arg config_dir)/move_base/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(arg config_dir)/move_base/base_local_planner_params.yaml"
+      command="load" />
   </node>
 
   <node name="four_omni_drive_controller" pkg="tsuten_navigation"

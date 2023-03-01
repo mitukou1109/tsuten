@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="move_base_config_dir" />
+  <arg name="config_dir" />
   <arg name="wheel_radius" />
   <arg name="wheel_vels_topic" />
 
   <include file="$(find tsuten_navigation)/launch/navigation.launch" pass_all_args="true" />
 
   <node name="behavior_server" pkg="tsuten_behavior" type="behavior_server" output="screen">
-    <rosparam file="$(find tsuten_behavior)/config/behavior_server.yaml" command="load" />
+    <rosparam file="$(arg config_dir)/behavior_server.yaml" command="load" />
   </node>
 
   <node name="behavior_visualizer" pkg="tsuten_behavior" type="behavior_visualizer" output="screen" />
