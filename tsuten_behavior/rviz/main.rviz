@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /TF1/Frames1
       Splitter Ratio: 0.5
     Tree Height: 437
   - Class: rviz/Selection
@@ -57,9 +58,49 @@ Visualization Manager:
       Enabled: true
       Frame Timeout: 15
       Frames:
-        All Enabled: true
+        All Enabled: false
+        base_link:
+          Value: true
+        body_link:
+          Value: false
         dual_table_link:
           Value: true
+        lb_back_barrel_1_link:
+          Value: false
+        lb_back_barrel_2_link:
+          Value: false
+        lb_back_barrel_3_link:
+          Value: false
+        lb_back_barrel_4_link:
+          Value: false
+        lb_front_barrel_1_link:
+          Value: false
+        lb_front_barrel_2_link:
+          Value: false
+        lb_front_barrel_3_link:
+          Value: false
+        lb_front_barrel_4_link:
+          Value: false
+        lb_wheel_link:
+          Value: false
+        lf_back_barrel_1_link:
+          Value: false
+        lf_back_barrel_2_link:
+          Value: false
+        lf_back_barrel_3_link:
+          Value: false
+        lf_back_barrel_4_link:
+          Value: false
+        lf_front_barrel_1_link:
+          Value: false
+        lf_front_barrel_2_link:
+          Value: false
+        lf_front_barrel_3_link:
+          Value: false
+        lf_front_barrel_4_link:
+          Value: false
+        lf_wheel_link:
+          Value: false
         map:
           Value: true
         movable_table_1200_link:
@@ -68,6 +109,44 @@ Visualization Manager:
           Value: true
         movable_table_1800_link:
           Value: true
+        odom:
+          Value: true
+        rb_back_barrel_1_link:
+          Value: false
+        rb_back_barrel_2_link:
+          Value: false
+        rb_back_barrel_3_link:
+          Value: false
+        rb_back_barrel_4_link:
+          Value: false
+        rb_front_barrel_1_link:
+          Value: false
+        rb_front_barrel_2_link:
+          Value: false
+        rb_front_barrel_3_link:
+          Value: false
+        rb_front_barrel_4_link:
+          Value: false
+        rb_wheel_link:
+          Value: false
+        rf_back_barrel_1_link:
+          Value: false
+        rf_back_barrel_2_link:
+          Value: false
+        rf_back_barrel_3_link:
+          Value: false
+        rf_back_barrel_4_link:
+          Value: false
+        rf_front_barrel_1_link:
+          Value: false
+        rf_front_barrel_2_link:
+          Value: false
+        rf_front_barrel_3_link:
+          Value: false
+        rf_front_barrel_4_link:
+          Value: false
+        rf_wheel_link:
+          Value: false
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
@@ -84,7 +163,172 @@ Visualization Manager:
             {}
           movable_table_1800_link:
             {}
+          odom:
+            base_link:
+              body_link:
+                lb_wheel_link:
+                  lb_back_barrel_1_link:
+                    {}
+                  lb_back_barrel_2_link:
+                    {}
+                  lb_back_barrel_3_link:
+                    {}
+                  lb_back_barrel_4_link:
+                    {}
+                  lb_front_barrel_1_link:
+                    {}
+                  lb_front_barrel_2_link:
+                    {}
+                  lb_front_barrel_3_link:
+                    {}
+                  lb_front_barrel_4_link:
+                    {}
+                lf_wheel_link:
+                  lf_back_barrel_1_link:
+                    {}
+                  lf_back_barrel_2_link:
+                    {}
+                  lf_back_barrel_3_link:
+                    {}
+                  lf_back_barrel_4_link:
+                    {}
+                  lf_front_barrel_1_link:
+                    {}
+                  lf_front_barrel_2_link:
+                    {}
+                  lf_front_barrel_3_link:
+                    {}
+                  lf_front_barrel_4_link:
+                    {}
+                rb_wheel_link:
+                  rb_back_barrel_1_link:
+                    {}
+                  rb_back_barrel_2_link:
+                    {}
+                  rb_back_barrel_3_link:
+                    {}
+                  rb_back_barrel_4_link:
+                    {}
+                  rb_front_barrel_1_link:
+                    {}
+                  rb_front_barrel_2_link:
+                    {}
+                  rb_front_barrel_3_link:
+                    {}
+                  rb_front_barrel_4_link:
+                    {}
+                rf_wheel_link:
+                  rf_back_barrel_1_link:
+                    {}
+                  rf_back_barrel_2_link:
+                    {}
+                  rf_back_barrel_3_link:
+                    {}
+                  rf_back_barrel_4_link:
+                    {}
+                  rf_front_barrel_1_link:
+                    {}
+                  rf_front_barrel_2_link:
+                    {}
+                  rf_front_barrel_3_link:
+                    {}
+                  rf_front_barrel_4_link:
+                    {}
       Update Interval: 0
+      Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /map
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: costmap
+      Draw Behind: false
+      Enabled: true
+      Name: GlobalCostmap
+      Topic: /move_base/global_costmap/costmap
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz/Map
+      Color Scheme: costmap
+      Draw Behind: false
+      Enabled: true
+      Name: LocalCostmap
+      Topic: /move_base/local_costmap/costmap
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 255; 0; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 0.029999999329447746
+      Name: GlobalPlan
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /move_base/GlobalPlanner/plan
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 0.029999999329447746
+      Name: LocalPlan
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /move_base/TebLocalPlannerROS/local_plan
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: MoveBaseGoal
+      Queue Size: 10
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Arrow
+      Topic: /move_base/current_goal
+      Unreliable: false
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true

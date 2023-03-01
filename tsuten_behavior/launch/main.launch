@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <!-- <include file="$(find tsuten_navigation)/launch/navigation.launch" /> -->
+  <arg name="move_base_config_dir" />
+  <arg name="wheel_radius" />
+  <arg name="wheel_vels_topic" />
+
+  <include file="$(find tsuten_navigation)/launch/navigation.launch" pass_all_args="true" />
 
   <node name="behavior_server" pkg="tsuten_behavior" type="behavior_server" output="screen">
     <rosparam file="$(find tsuten_behavior)/config/behavior_server.yaml" command="load" />
@@ -10,4 +14,7 @@
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tsuten_behavior)/rviz/main.rviz"
     required="true" output="screen" />
+
+  <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"
+    launch-prefix="bash -c 'sleep 3.0; $0 $@' " />
 </launch>

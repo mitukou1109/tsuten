@@ -25,6 +25,7 @@
   <exec_depend>libqt5-core</exec_depend>
   <exec_depend>libqt5-gui</exec_depend>
   <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>tsuten_navigation</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 
