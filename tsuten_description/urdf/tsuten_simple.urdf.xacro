@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot name="tsuten" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find tsuten_description)/urdf/lidar.urdf.xacro" />
   <xacro:include filename="$(find tsuten_description)/urdf/material.urdf.xacro" />
   <xacro:include filename="$(find tsuten_description)/urdf/omni_wheel.urdf.xacro" />
   <xacro:property name="body_size_x" value="503.0e-3" />
@@ -55,6 +56,10 @@
     <origin xyz="${omni_wheel_x} -${omni_wheel_y} ${omni_wheel_z}"
       rpy="${radians(-45)} ${radians(-90)} 0" />
   </xacro:omni_wheel>
+
+  <xacro:lidar parent="body_link">
+    <origin xyz="-30.69e-3 283.7e-3 -164.8e-3" rpy="0 0 ${radians(90)}" />
+  </xacro:lidar>
 
   <gazebo reference="body_link">
     <material>

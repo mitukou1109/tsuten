@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:macro name="lidar" params="parent *joint_origin">
+    <xacro:property name="radius" value="0.03" />
+    <xacro:property name="length" value="0.08" />
+    <xacro:property name="mass" value="0.2" />
+    <xacro:property name="visualize" value="true" />
+    <xacro:property name="view_angle" value="180" />
+    <xacro:property name="min_range" value="0.1" />
+    <xacro:property name="max_range" value="30" />
+
+    <link name="lidar_link">
+      <visual>
+        <geometry>
+          <cylinder radius="${radius}" length="${length}" />
+        </geometry>
+        <material name="Blue" />
+      </visual>
+      <inertial>
+        <origin xyz="0 0 0" />
+        <mass value="${mass}" />
+        <inertia ixx="${mass*(radius**2/4+length**2/12)}" ixy="0" ixz="0"
+          iyy="${mass*(radius**2/4+length**2/12)}" iyz="0"
+          izz="${mass*radius**2/2}" />
+      </inertial>
+    </link>
+    <joint name="lidar_joint" type="fixed">
+      <xacro:insert_block name="joint_origin" />
+      <parent link="${parent}" />
+      <child link="lidar_link" />
+    </joint>
+    <gazebo reference="lidar_link">
+      <material>Gazebo/Blue</material>
+      <sensor type="ray" name="lidar">
+        <pose>0 0 0 0 0 0</pose>
+        <visualize>${visualize}</visualize>
+        <update_rate>10</update_rate>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>300</samples>
+              <resolution>1</resolution>
+              <min_angle>${radians(-view_angle/2)}</min_angle>
+              <max_angle>${radians(view_angle/2)}</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>${min_range}</min>
+            <max>${max_range}</max>
+            <resolution>0.01</resolution>
+          </range>
+        </ray>
+        <plugin name="gazebo_ros_lidar_controller" filename="libgazebo_ros_laser.so">
+          <topicName>/lidar/scan</topicName>
+          <frameName>lidar_link</frameName>
+        </plugin>
+      </sensor>
+    </gazebo>
+  </xacro:macro>
+</robot>
