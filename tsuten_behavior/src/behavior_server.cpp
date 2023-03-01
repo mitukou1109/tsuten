@@ -28,6 +28,7 @@ namespace tsuten_behavior
         shooter_valve_on_durations_(DEFAULT_SHOOTER_VALVE_ON_DURATIONS_),
         perform_action_server_(pnh_, "perform", false),
         move_base_action_client_("move_base"),
+        reconfigure_server_(reconfigure_mutex_),
         is_goal_available_(false)
   {
     initializeTableTFs();
@@ -274,7 +275,10 @@ namespace tsuten_behavior
     config.movable_table_1800_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1800)
                                                .getOrigin()
                                                .getY();
-    reconfigure_server_.updateConfig(config);
+    {
+      boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
+      reconfigure_server_.updateConfig(config);
+    }
   }
 
   void BehaviorServer::publishTF(const ros::TimerEvent &event)

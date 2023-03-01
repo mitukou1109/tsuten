@@ -63,6 +63,10 @@ namespace tsuten_behavior
 
     actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> move_base_action_client_;
 
+    boost::recursive_mutex reconfigure_mutex_;
+
+    dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
+
     bool is_goal_available_;
 
     ros::Timer publish_tf_timer_;
@@ -73,8 +77,6 @@ namespace tsuten_behavior
     tf2_ros::StaticTransformBroadcaster static_tf_broadcaster_;
 
     tf2_ros::TransformBroadcaster tf_broadcaster_;
-
-    dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
 
     std::unordered_map<ShooterID, double> shooter_valve_on_durations_;
 
