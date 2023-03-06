@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="map_file" default="$(find tsuten_navigation)/map/field.yaml" />
-  <arg name="move_base_config_dir" />
+  <arg name="map_name" value="field" />
+  <arg name="map_file" value="$(find tsuten_navigation)/map/$(arg map_name)/$(arg map_name).yaml" />
   <arg name="config_dir" />
   <arg name="wheel_radius" />
   <arg name="wheel_vels_topic" />
