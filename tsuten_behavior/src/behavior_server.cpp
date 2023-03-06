@@ -8,10 +8,10 @@
 namespace tsuten_behavior
 {
   const std::unordered_map<TableID, tf2::Transform> BehaviorServer::DEFAULT_TABLE_TFS =
-      {{TableID::DUAL_TABLE, tf2::Transform({{0, 0, 1}, M_PI / 2}, {2.5, 2.4, 0})},
-       {TableID::MOVABLE_TABLE_1200, tf2::Transform({{0, 0, 1}, M_PI / 2}, {4.5, 1.9, 0})},
-       {TableID::MOVABLE_TABLE_1500, tf2::Transform({{0, 0, 1}, M_PI / 2}, {4.5, 1.9, 0})},
-       {TableID::MOVABLE_TABLE_1800, tf2::Transform({{0, 0, 1}, M_PI / 2}, {6.5, 1.9, 0})}};
+      {{TableID::DUAL_TABLE, tf2::Transform({{0, 0, 1}, 0}, {2.5, 2.4, 0})},
+       {TableID::MOVABLE_TABLE_1200, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
+       {TableID::MOVABLE_TABLE_1500, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
+       {TableID::MOVABLE_TABLE_1800, tf2::Transform({{0, 0, 1}, 0}, {6.5, 1.9, 0})}};
 
   const std::unordered_map<ShooterID, double>
       BehaviorServer::DEFAULT_SHOOTER_VALVE_ON_DURATIONS_ =
@@ -27,14 +27,14 @@ namespace tsuten_behavior
         table_tfs_(DEFAULT_TABLE_TFS),
         shooter_valve_on_durations_(DEFAULT_SHOOTER_VALVE_ON_DURATIONS_),
         perform_action_server_(pnh_, "perform", false),
-        move_base_action_client_("move_base"),
         reconfigure_server_(reconfigure_mutex_),
         is_goal_available_(false)
   {
-    initializeTableTFs();
-
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
+    pnh_.param("goal_distance_from_table", goal_distance_from_table_, 0.6);
+
+    initializeTableTFs();
 
     static_tf_broadcaster_.sendTransform(createTableTFMsg(TableID::DUAL_TABLE));
 
@@ -71,14 +71,15 @@ namespace tsuten_behavior
 
     perform_action_server_.start();
 
-    if (!move_base_action_client_.waitForServer(ros::Duration(3.0)))
-    {
-      ROS_ERROR("move_base action server timeout");
-    }
+    updateReconfigurableParameters();
 
-    reconfigure_server_.setCallback(boost::bind(&BehaviorServer::reconfigureParameters, this, _1, _2));
+    reconfigure_server_.setCallback(
+        boost::bind(&BehaviorServer::reconfigureParameters, this, _1, _2));
 
-    publish_tf_timer_ = pnh_.createTimer(ros::Rate(tf_publish_rate_), &BehaviorServer::publishTF, this);
+    navigation_handler_.waitForMoveBaseActionServer(ros::Duration(3.0));
+
+    publish_tf_timer_ =
+        pnh_.createTimer(ros::Rate(tf_publish_rate_), &BehaviorServer::publishTF, this);
 
     launch_perform_thread_ = std::make_unique<boost::thread>([this]
                                                              { launchPerformThread(); });
@@ -92,6 +93,11 @@ namespace tsuten_behavior
 
   void BehaviorServer::performThread()
   {
+    if (!navigation_handler_.isConnectedToMoveBaseActionServer())
+    {
+      navigation_handler_.waitForMoveBaseActionServer(ros::Duration(0));
+    }
+
     std::vector<uint8_t> tables;
     auto isDirectedToPerformAt = [&tables](uint8_t table)
     { return std::find(tables.cbegin(), tables.cend(), table) != tables.cend(); };
@@ -103,10 +109,11 @@ namespace tsuten_behavior
 
     ROS_INFO("Performance started");
 
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
     {
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
+      navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
+          .waitForNavigationToComplete();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER);
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
@@ -115,33 +122,52 @@ namespace tsuten_behavior
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER))
     {
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      if (!isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
+      {
+        publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
+        navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
+            .waitForNavigationToComplete();
+      }
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER);
       shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200))
     {
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1200);
+      navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1200))
+          .waitForNavigationToComplete();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200);
       shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500))
     {
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1500);
+      navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1500))
+          .waitForNavigationToComplete();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500);
       shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800))
     {
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(3000));
+      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800);
+      navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1800))
+          .waitForNavigationToComplete();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800);
       shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle().waitUntilShootCompletes();
     }
 
+    publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_HOME);
+    navigation_handler_.startNavigation(
+                           tf2::Stamped<tf2::Transform>(tf2::Transform({{0, 0, 1}, 0}),
+                                                        ros::Time::now(), global_frame_))
+        .waitForNavigationToComplete();
+
     ROS_INFO("Performance completed");
+
+    perform_action_server_.setSucceeded();
   }
 
   void BehaviorServer::launchPerformThread()
@@ -160,9 +186,7 @@ namespace tsuten_behavior
 
       perform_thread_->join();
 
-      perform_action_server_.setSucceeded();
-
-      is_goal_available_ = false;
+      resetToInitialState();
     }
   }
 
@@ -179,24 +203,35 @@ namespace tsuten_behavior
   {
     {
       boost::lock_guard<boost::mutex> lock(mutex_);
-
       perform_goal_ = perform_action_server_.acceptNewGoal();
       is_goal_available_ = true;
     }
+
     is_goal_available_cv_.notify_all();
   }
 
   void BehaviorServer::preemptPerformAction()
+  {
+    perform_thread_->interrupt();
+
+    perform_action_server_.setPreempted();
+
+    ROS_INFO("Performance canceled");
+  }
+
+  void BehaviorServer::resetToInitialState()
   {
     {
       boost::lock_guard<boost::mutex> lock(mutex_);
       is_goal_available_ = false;
     }
 
-    perform_thread_->interrupt();
+    if (navigation_handler_.isNavigationInProgress())
+    {
+      navigation_handler_.stopNavigation();
+    }
 
-    perform_action_server_.setPreempted();
-    ROS_INFO("Performance canceled");
+    navigation_handler_.stopChassis();
 
     resetAllShooters();
   }
@@ -264,21 +299,6 @@ namespace tsuten_behavior
 
       table_tf.getOrigin().setZ(TABLE_SIZES.at(table_id).at(2) / 2); // for visualization
     }
-
-    BehaviorServerConfig config;
-    config.movable_table_1200_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1200)
-                                               .getOrigin()
-                                               .getY();
-    config.movable_table_1500_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1500)
-                                               .getOrigin()
-                                               .getY();
-    config.movable_table_1800_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1800)
-                                               .getOrigin()
-                                               .getY();
-    {
-      boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
-      reconfigure_server_.updateConfig(config);
-    }
   }
 
   void BehaviorServer::publishTF(const ros::TimerEvent &event)
@@ -305,6 +325,17 @@ namespace tsuten_behavior
     table_tf_msg.transform = tf2::toMsg(table_tfs_.at(table_id));
 
     return table_tf_msg;
+  }
+
+  tf2::Stamped<tf2::Transform> BehaviorServer::getGoal(const TableID &table_id)
+  {
+    tf2::Transform goal_transform(
+        {{0, 0, 1}, 0},
+        {0, -(TABLE_SIZES.at(table_id).at(1) / 2 + goal_distance_from_table_),
+         -TABLE_SIZES.at(table_id).at(2) / 2});
+
+    return tf2::Stamped<tf2::Transform>(
+        table_tfs_.at(table_id) * goal_transform, ros::Time::now(), global_frame_);
   }
 
   void BehaviorServer::initializeShooters()
@@ -417,6 +448,25 @@ namespace tsuten_behavior
     }
   }
 
+  void BehaviorServer::updateReconfigurableParameters()
+  {
+    BehaviorServerConfig config;
+    config.movable_table_1200_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1200)
+                                               .getOrigin()
+                                               .getY();
+    config.movable_table_1500_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1500)
+                                               .getOrigin()
+                                               .getY();
+    config.movable_table_1800_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1800)
+                                               .getOrigin()
+                                               .getY();
+    config.goal_distance_from_table = goal_distance_from_table_;
+    {
+      boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
+      reconfigure_server_.updateConfig(config);
+    }
+  }
+
   void BehaviorServer::reconfigureParameters(
       tsuten_behavior::BehaviorServerConfig &config, uint32_t level)
   {
@@ -429,6 +479,8 @@ namespace tsuten_behavior
     table_tfs_.at(TableID::MOVABLE_TABLE_1800)
         .getOrigin()
         .setY(config.movable_table_1800_position_y);
+
+    goal_distance_from_table_ = config.goal_distance_from_table;
   }
 } // namespace tsuten_behavior
 

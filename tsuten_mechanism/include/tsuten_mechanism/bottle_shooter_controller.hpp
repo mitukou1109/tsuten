@@ -16,8 +16,7 @@ namespace tsuten_mechanism
 
     BottleShooterController &shootBottle();
 
-    BottleShooterController &waitUntilShootCompletes(
-        const ros::Duration &timeout = ros::Duration(0));
+    BottleShooterController &waitUntilShootCompletes();
 
   private:
     using ValveState = SolenoidValveController::State;
