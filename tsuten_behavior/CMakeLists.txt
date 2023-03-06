@@ -5,7 +5,6 @@ find_package(catkin REQUIRED
   COMPONENTS
     actionlib
     jsk_rviz_plugins
-    move_base_msgs
     pluginlib
     roscpp
     rviz
@@ -14,6 +13,7 @@ find_package(catkin REQUIRED
     tf2_ros
     tsuten_mechanism
     tsuten_msgs
+    tsuten_navigation
     visualization_msgs
 )
 
@@ -29,7 +29,6 @@ catkin_package(
   CATKIN_DEPENDS
     actionlib
     jsk_rviz_plugins
-    move_base_msgs
     pluginlib
     roscpp
     rviz
@@ -38,6 +37,7 @@ catkin_package(
     tf2_ros
     tsuten_mechanism
     tsuten_msgs
+    tsuten_navigation
     visualization_msgs
   INCLUDE_DIRS include
   LIBRARIES behavior_control_panel

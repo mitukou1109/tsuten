@@ -17,13 +17,13 @@ catkin_package(
   LIBRARIES solenoid_valve_controller bottle_shooter_controller
 )
 
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
-
 add_library(solenoid_valve_controller
   src/solenoid_valve_controller.cpp
+)
+target_include_directories(solenoid_valve_controller
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
 )
 target_link_libraries(solenoid_valve_controller
   ${catkin_LIBRARIES}
@@ -32,6 +32,11 @@ target_link_libraries(solenoid_valve_controller
 add_library(bottle_shooter_controller
   src/bottle_shooter_controller.cpp
 )
+target_include_directories(bottle_shooter_controller
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+)
 target_link_libraries(bottle_shooter_controller
   solenoid_valve_controller
   ${catkin_LIBRARIES}
@@ -39,6 +44,11 @@ target_link_libraries(bottle_shooter_controller
 
 add_executable(bottle_shooter_controller_node
   src/bottle_shooter_controller_node.cpp
+)
+target_include_directories(bottle_shooter_controller_node
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
 )
 target_link_libraries(bottle_shooter_controller_node
   bottle_shooter_controller

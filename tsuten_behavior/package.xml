@@ -11,7 +11,6 @@
 
   <depend>actionlib</depend>
   <depend>jsk_rviz_plugins</depend>
-  <depend>move_base_msgs</depend>
   <depend>pluginlib</depend>
   <depend>roscpp</depend>
   <depend>rviz</depend>
@@ -20,12 +19,12 @@
   <depend>tf2_ros</depend>
   <depend>tsuten_mechanism</depend>
   <depend>tsuten_msgs</depend>
+  <depend>tsuten_navigation</depend>
   <depend>visualization_msgs</depend>
 
   <exec_depend>libqt5-core</exec_depend>
   <exec_depend>libqt5-gui</exec_depend>
   <exec_depend>libqt5-widgets</exec_depend>
-  <exec_depend>tsuten_navigation</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 

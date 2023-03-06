@@ -4,6 +4,7 @@ project(tsuten_navigation)
 find_package(catkin REQUIRED
   COMPONENTS
     geometry_msgs
+    move_base_msgs
     nav_msgs
     roscpp
     std_msgs
@@ -14,19 +15,34 @@ find_package(catkin REQUIRED
 catkin_package(
   CATKIN_DEPENDS
     geometry_msgs
+    move_base_msgs
     nav_msgs
     roscpp
     std_msgs
     tf2
     tf2_ros
+  INCLUDE_DIRS include
+  LIBRARIES navigation_handler
 )
 
-include_directories(
-  ${catkin_INCLUDE_DIRS}
+add_library(navigation_handler
+  src/navigation_handler.cpp
+)
+target_include_directories(navigation_handler
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+target_link_libraries(navigation_handler
+  ${catkin_LIBRARIES}
 )
 
 add_executable(four_omni_drive_controller
   src/four_omni_drive_controller.cpp
+)
+target_include_directories(four_omni_drive_controller
+  PUBLIC
+    ${catkin_INCLUDE_DIRS}
 )
 target_link_libraries(four_omni_drive_controller
   ${catkin_LIBRARIES}
@@ -35,6 +51,19 @@ target_link_libraries(four_omni_drive_controller
 add_executable(odom_tf_publisher
   src/odom_tf_publisher.cpp
 )
+target_include_directories(odom_tf_publisher
+  PUBLIC
+    ${catkin_INCLUDE_DIRS}
+)
 target_link_libraries(odom_tf_publisher
   ${catkin_LIBRARIES}
+)
+
+install(TARGETS navigation_handler
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
 )

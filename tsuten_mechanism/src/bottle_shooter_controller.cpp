@@ -1,5 +1,7 @@
 #include <tsuten_mechanism/bottle_shooter_controller.hpp>
 
+#include <boost/thread.hpp>
+
 namespace tsuten_mechanism
 {
   BottleShooterController::BottleShooterController(
@@ -35,18 +37,11 @@ namespace tsuten_mechanism
     return *this;
   }
 
-  BottleShooterController &BottleShooterController::waitUntilShootCompletes(
-      const ros::Duration &timeout)
+  BottleShooterController &BottleShooterController::waitUntilShootCompletes()
   {
-    ros::Time timeout_time = ros::Time::now() + timeout;
-
     while (is_shooting_)
     {
-      ros::Duration time_left = timeout_time - ros::Time::now();
-      if (timeout != ros::Duration(0) && time_left <= ros::Duration(0))
-      {
-        break;
-      }
+      boost::this_thread::sleep_for(boost::chrono::milliseconds(1));
     }
 
     return *this;

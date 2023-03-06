@@ -83,5 +83,7 @@ namespace tsuten_behavior
        {tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800,
         "Moving to movable table (1800)"},
        {tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800,
-        "Shooting on movable table (1800)"}};
+        "Shooting on movable table (1800)"},
+       {tsuten_msgs::PerformFeedback::MOVING_TO_HOME,
+        "Moving to home"}};
 }

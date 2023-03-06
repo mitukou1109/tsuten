@@ -3,10 +3,8 @@
 #include <unordered_map>
 
 #include <ros/ros.h>
-#include <actionlib/client/simple_action_client.h>
 #include <actionlib/server/simple_action_server.h>
 #include <dynamic_reconfigure/server.h>
-#include <move_base_msgs/MoveBaseAction.h>
 #include <tf2/utils.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
@@ -16,6 +14,7 @@
 #include <tsuten_msgs/BehaviorServerConfig.h>
 #include <tsuten_msgs/PerformAction.h>
 #include <tsuten_msgs/ShootOnTable.h>
+#include <tsuten_navigation/navigation_handler.hpp>
 
 namespace tsuten_behavior
 {
@@ -41,17 +40,23 @@ namespace tsuten_behavior
 
     void preemptPerformAction();
 
+    void resetToInitialState();
+
     void initializeTableTFs();
 
     void publishTF(const ros::TimerEvent &event);
 
     geometry_msgs::TransformStamped createTableTFMsg(TableID table_id);
 
+    tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
+
     void initializeShooters();
 
     bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res);
 
     void resetAllShooters();
+
+    void updateReconfigurableParameters();
 
     void reconfigureParameters(tsuten_behavior::BehaviorServerConfig &config, uint32_t level);
 
@@ -60,8 +65,6 @@ namespace tsuten_behavior
     std::unordered_map<TableID, tf2::Transform> table_tfs_;
 
     actionlib::SimpleActionServer<tsuten_msgs::PerformAction> perform_action_server_;
-
-    actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> move_base_action_client_;
 
     boost::recursive_mutex reconfigure_mutex_;
 
@@ -86,9 +89,13 @@ namespace tsuten_behavior
 
     tsuten_msgs::PerformGoalConstPtr perform_goal_;
 
+    tsuten_navigation::NavigationHandler navigation_handler_;
+
     std::string global_frame_;
 
     double tf_publish_rate_;
+
+    double goal_distance_from_table_;
 
     boost::mutex mutex_;
 
