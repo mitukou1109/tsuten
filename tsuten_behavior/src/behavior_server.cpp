@@ -34,6 +34,9 @@ namespace tsuten_behavior
     pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
     pnh_.param("goal_distance_from_table", goal_distance_from_table_, 0.6);
 
+    ros::NodeHandle nh;
+    sensor_states_sub_ = nh.subscribe("sensor_states", 10, &BehaviorServer::sensorStatesCallback, this);
+
     initializeTableTFs();
 
     static_tf_broadcaster_.sendTransform(createTableTFMsg(TableID::DUAL_TABLE));
@@ -114,6 +117,7 @@ namespace tsuten_behavior
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
       navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
           .waitForNavigationToComplete();
+      moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER);
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
@@ -128,6 +132,7 @@ namespace tsuten_behavior
         navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
             .waitForNavigationToComplete();
       }
+      moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER);
       shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle().waitUntilShootCompletes();
     }
@@ -137,6 +142,7 @@ namespace tsuten_behavior
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1200);
       navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1200))
           .waitForNavigationToComplete();
+      moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200);
       shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle().waitUntilShootCompletes();
     }
@@ -146,6 +152,7 @@ namespace tsuten_behavior
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1500);
       navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1500))
           .waitForNavigationToComplete();
+      moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500);
       shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle().waitUntilShootCompletes();
     }
@@ -155,6 +162,7 @@ namespace tsuten_behavior
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800);
       navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1800))
           .waitForNavigationToComplete();
+      moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800);
       shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle().waitUntilShootCompletes();
     }
@@ -338,6 +346,15 @@ namespace tsuten_behavior
         table_tfs_.at(table_id) * goal_transform, ros::Time::now(), global_frame_);
   }
 
+  void BehaviorServer::moveUntilBumperIsPressed()
+  {
+    while (!sensor_states_.bumper_l || !sensor_states_.bumper_r)
+    {
+      navigation_handler_.commandVelocityToChassis({0, 0.5, 0});
+    }
+    navigation_handler_.stopChassis();
+  }
+
   void BehaviorServer::initializeShooters()
   {
     XmlRpc::XmlRpcValue shooter_valve_on_duration_list;
@@ -481,6 +498,12 @@ namespace tsuten_behavior
         .setY(config.movable_table_1800_position_y);
 
     goal_distance_from_table_ = config.goal_distance_from_table;
+  }
+
+  void BehaviorServer::sensorStatesCallback(const tsuten_msgs::SensorStates &sensor_states)
+  {
+    sensor_states_.bumper_l = static_cast<bool>(sensor_states.bumper_l);
+    sensor_states_.bumper_r = static_cast<bool>(sensor_states.bumper_r);
   }
 } // namespace tsuten_behavior
 

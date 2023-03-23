@@ -13,6 +13,7 @@
 #include <tsuten_mechanism/bottle_shooter_controller.hpp>
 #include <tsuten_msgs/BehaviorServerConfig.h>
 #include <tsuten_msgs/PerformAction.h>
+#include <tsuten_msgs/SensorStates.h>
 #include <tsuten_msgs/ShootOnTable.h>
 #include <tsuten_navigation/navigation_handler.hpp>
 
@@ -26,6 +27,12 @@ namespace tsuten_behavior
     ~BehaviorServer();
 
   private:
+    struct SensorStates
+    {
+      bool bumper_l;
+      bool bumper_r;
+    };
+
     static const std::unordered_map<TableID, tf2::Transform> DEFAULT_TABLE_TFS;
 
     static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS_;
@@ -50,6 +57,8 @@ namespace tsuten_behavior
 
     tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
 
+    void moveUntilBumperIsPressed();
+
     void initializeShooters();
 
     bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res);
@@ -59,6 +68,8 @@ namespace tsuten_behavior
     void updateReconfigurableParameters();
 
     void reconfigureParameters(tsuten_behavior::BehaviorServerConfig &config, uint32_t level);
+
+    void sensorStatesCallback(const tsuten_msgs::SensorStates &sensor_states);
 
     ros::NodeHandle pnh_;
 
@@ -71,6 +82,8 @@ namespace tsuten_behavior
     dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
 
     bool is_goal_available_;
+
+    ros::Subscriber sensor_states_sub_;
 
     ros::Timer publish_tf_timer_;
 
@@ -90,6 +103,8 @@ namespace tsuten_behavior
     tsuten_msgs::PerformGoalConstPtr perform_goal_;
 
     tsuten_navigation::NavigationHandler navigation_handler_;
+
+    SensorStates sensor_states_;
 
     std::string global_frame_;
 
