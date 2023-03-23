@@ -18,7 +18,7 @@ namespace tsuten_mechanism
 
   BottleShooterController &BottleShooterController::resetShooter()
   {
-    valve_controller_.setState(ValveState::OFF);
+    valve_controller_.command(ValveState::OFF);
     is_shooting_ = false;
 
     return *this;
@@ -28,7 +28,7 @@ namespace tsuten_mechanism
   {
     if (!is_shooting_)
     {
-      valve_controller_.setState(ValveState::ON);
+      valve_controller_.command(ValveState::ON);
       is_shooting_ = true;
 
       valve_control_timer_.start();

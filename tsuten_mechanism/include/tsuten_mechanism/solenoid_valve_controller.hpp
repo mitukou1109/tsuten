@@ -15,15 +15,9 @@ namespace tsuten_mechanism
 
     SolenoidValveController(const std::string &valve_name);
 
-    void setState(State state);
-
-    State getState();
+    void command(State state);
 
   private:
-    void publishState();
-
-    State valve_state_;
-
-    ros::Publisher valve_state_pub_;
+    ros::Publisher command_pub_;
   };
 } // namespace tsuten_mechanism
