@@ -14,7 +14,12 @@ add_action_files(FILES
   Perform.action
 )
 
+add_message_files(FILES
+  SensorStates.msg
+)
+
 add_service_files(FILES
+  ResetOdometry.srv
   ResetShooter.srv
   ShootBottle.srv  
   ShootOnTable.srv
