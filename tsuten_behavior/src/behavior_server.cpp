@@ -7,6 +7,8 @@
 
 namespace tsuten_behavior
 {
+  using TapeLEDColor = tsuten_mechanism::TapeLEDController::Color;
+
   const std::unordered_map<TableID, tf2::Transform> BehaviorServer::DEFAULT_TABLE_TFS =
       {{TableID::DUAL_TABLE, tf2::Transform({{0, 0, 1}, 0}, {2.5, 2.4, 0})},
        {TableID::MOVABLE_TABLE_1200, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
@@ -115,10 +117,12 @@ namespace tsuten_behavior
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
     {
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
+      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
       navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
           .waitForNavigationToComplete();
       moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER);
+      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
       boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
       shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle().waitUntilShootCompletes();
@@ -129,45 +133,54 @@ namespace tsuten_behavior
       if (!isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
       {
         publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
+        tape_led_controller_.setColor(TapeLEDColor::YELLOW);
         navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
             .waitForNavigationToComplete();
       }
       moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER);
+      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
       shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200))
     {
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1200);
+      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
       navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1200))
           .waitForNavigationToComplete();
       moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200);
+      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
       shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500))
     {
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1500);
+      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
       navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1500))
           .waitForNavigationToComplete();
       moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500);
+      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
       shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle().waitUntilShootCompletes();
     }
 
     if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800))
     {
       publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800);
+      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
       navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1800))
           .waitForNavigationToComplete();
       moveUntilBumperIsPressed();
       publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800);
+      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
       shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle().waitUntilShootCompletes();
     }
 
     publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_HOME);
+    tape_led_controller_.setColor(TapeLEDColor::YELLOW);
     navigation_handler_.startNavigation(
                            tf2::Stamped<tf2::Transform>(tf2::Transform({{0, 0, 1}, 0}),
                                                         ros::Time::now(), global_frame_))
@@ -242,6 +255,8 @@ namespace tsuten_behavior
     navigation_handler_.stopChassis();
 
     resetAllShooters();
+
+    tape_led_controller_.setColor(TapeLEDColor::RED);
   }
 
   void BehaviorServer::initializeTableTFs()

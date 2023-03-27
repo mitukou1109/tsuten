@@ -11,6 +11,7 @@
 
 #include <tsuten_behavior/constants.hpp>
 #include <tsuten_mechanism/bottle_shooter_controller.hpp>
+#include <tsuten_mechanism/tape_led_controller.hpp>
 #include <tsuten_msgs/BehaviorServerConfig.h>
 #include <tsuten_msgs/PerformAction.h>
 #include <tsuten_msgs/SensorStates.h>
@@ -99,6 +100,8 @@ namespace tsuten_behavior
     std::unordered_map<ShooterID, tsuten_mechanism::BottleShooterController> shooters_;
 
     std::unordered_map<ShooterID, ros::ServiceServer> shoot_bottle_service_servers_;
+
+    tsuten_mechanism::TapeLEDController tape_led_controller_;
 
     tsuten_msgs::PerformGoalConstPtr perform_goal_;
 
