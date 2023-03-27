@@ -16,6 +16,7 @@ add_action_files(FILES
 
 add_message_files(FILES
   SensorStates.msg
+  TapeLEDCommand.msg
 )
 
 add_service_files(FILES

@@ -14,7 +14,7 @@ catkin_package(
     std_msgs
     tsuten_msgs
   INCLUDE_DIRS include
-  LIBRARIES solenoid_valve_controller bottle_shooter_controller
+  LIBRARIES solenoid_valve_controller bottle_shooter_controller tape_led_controller
 )
 
 add_library(solenoid_valve_controller
@@ -55,12 +55,29 @@ target_link_libraries(bottle_shooter_controller_node
   ${catkin_LIBRARIES}
 )
 
+add_library(tape_led_controller
+  src/tape_led_controller.cpp
+)
+target_include_directories(tape_led_controller
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+target_link_libraries(tape_led_controller
+  ${catkin_LIBRARIES}
+)
+
 install(TARGETS solenoid_valve_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 )
 install(TARGETS bottle_shooter_controller
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+install(TARGETS tape_led_controller
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
