@@ -3,10 +3,11 @@
   <arg name="map_name" value="field_without_movable_tables" />
   <arg name="map_file" value="$(find tsuten_navigation)/map/$(arg map_name)/$(arg map_name).yaml" />
   <arg name="config_dir" />
-  <arg name="wheel_radius" />
-  <arg name="wheel_vels_topic" />
+  <arg name="robot_type" />
 
-  <include file="$(find tsuten_description)/launch/spawn_robot.launch" />
+  <include file="$(find tsuten_description)/launch/spawn_robot.launch">
+    <arg name="robot_type" value="$(arg robot_type)" />
+  </include>
 
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
@@ -28,12 +29,6 @@
     <rosparam file="$(arg config_dir)/move_base/local_costmap_params.yaml" command="load" />
     <rosparam file="$(arg config_dir)/move_base/base_local_planner_params.yaml"
       command="load" />
-  </node>
-
-  <node name="four_omni_drive_controller" pkg="tsuten_navigation"
-    type="four_omni_drive_controller">
-    <param name="wheel_radius" value="$(arg wheel_radius)" />
-    <param name="wheel_vels_topic" value="$(arg wheel_vels_topic)" />
   </node>
 
   <node name="odom_tf_publisher" pkg="tsuten_navigation" type="odom_tf_publisher" />
