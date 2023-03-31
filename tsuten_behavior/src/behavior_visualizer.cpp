@@ -17,8 +17,7 @@ namespace tsuten_behavior
   public:
     BehaviorVisualizer()
     {
-      ros::NodeHandle behavior_server_nh("behavior_server");
-      ros::NodeHandle pnh("~");
+      ros::NodeHandle nh, pnh("~"), behavior_server_nh("behavior_server");
 
       initializeShooterStates();
 
@@ -27,8 +26,8 @@ namespace tsuten_behavior
         auto &shooter_id = shooter_name_pair.first;
         auto &shooter_name = shooter_name_pair.second;
 
-        auto shooter_state_sub = behavior_server_nh.subscribe<std_msgs::Bool>(
-            shooter_name + "/state", 2,
+        auto shooter_state_sub = nh.subscribe<std_msgs::Bool>(
+            shooter_name + "/command", 2,
             boost::bind(&BehaviorVisualizer::setShooterState, this, shooter_id, _1));
 
         shooter_state_subs_.insert({shooter_id, shooter_state_sub});

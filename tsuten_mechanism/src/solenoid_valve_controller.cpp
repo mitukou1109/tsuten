@@ -6,9 +6,9 @@ namespace tsuten_mechanism
 {
   SolenoidValveController::SolenoidValveController(const std::string &valve_name)
   {
-    ros::NodeHandle pnh("~");
+    ros::NodeHandle nh;
 
-    command_pub_ = pnh.advertise<std_msgs::Bool>(valve_name + "/command", 10);
+    command_pub_ = nh.advertise<std_msgs::Bool>(valve_name + "/command", 10);
   }
 
   void SolenoidValveController::command(SolenoidValveController::State state)

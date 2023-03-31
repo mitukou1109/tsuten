@@ -15,9 +15,9 @@ namespace tsuten_mechanism
 
   TapeLEDController::TapeLEDController()
   {
-    ros::NodeHandle pnh("~");
+    ros::NodeHandle nh;
 
-    command_pub_ = pnh.advertise<tsuten_msgs::TapeLEDCommand>("tape_led_command", 10);
+    command_pub_ = nh.advertise<tsuten_msgs::TapeLEDCommand>("tape_led_command", 10);
   }
 
   void TapeLEDController::setColor(Color color, bool blink)

@@ -9,11 +9,11 @@ namespace tsuten_mechanism
       : valve_controller_(bottle_shooter_name),
         is_shooting_(false)
   {
-    ros::NodeHandle pnh("~");
+    ros::NodeHandle nh;
 
     valve_control_timer_ =
-        pnh.createTimer(ros::Duration(valve_on_duration),
-                        &BottleShooterController::valveControlTimerCallback, this, false, false);
+        nh.createTimer(ros::Duration(valve_on_duration),
+                       &BottleShooterController::valveControlTimerCallback, this, false, false);
   }
 
   BottleShooterController &BottleShooterController::resetShooter()
