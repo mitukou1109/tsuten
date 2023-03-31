@@ -15,6 +15,7 @@ add_action_files(FILES
 )
 
 add_message_files(FILES
+  Odometry.msg
   SensorStates.msg
   TapeLEDCommand.msg
 )
