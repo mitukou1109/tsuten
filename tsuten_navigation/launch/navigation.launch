@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="map_name" value="field_without_movable_tables" />
+  <arg name="map_name" value="field_dual_table_only" />
   <arg name="map_file" value="$(find tsuten_navigation)/map/$(arg map_name)/$(arg map_name).yaml" />
   <arg name="config_dir" />
   <arg name="robot_type" />
