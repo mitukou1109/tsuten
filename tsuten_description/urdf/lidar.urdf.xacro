@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:macro name="lidar" params="parent *joint_origin">
-    <xacro:property name="radius" value="0.03" />
-    <xacro:property name="length" value="0.08" />
+    <xacro:property name="radius" value="0.037" />
+    <xacro:property name="length" value="0.043" />
     <xacro:property name="mass" value="0.2" />
     <xacro:property name="visualize" value="true" />
     <xacro:property name="view_angle" value="180" />
-    <xacro:property name="min_range" value="0.1" />
-    <xacro:property name="max_range" value="30" />
+    <xacro:property name="min_range" value="0.12" />
+    <xacro:property name="max_range" value="12" />
 
     <link name="lidar_link">
       <visual>
@@ -38,7 +38,7 @@
         <ray>
           <scan>
             <horizontal>
-              <samples>300</samples>
+              <samples>720</samples>
               <resolution>1</resolution>
               <min_angle>${radians(-view_angle/2)}</min_angle>
               <max_angle>${radians(view_angle/2)}</max_angle>
