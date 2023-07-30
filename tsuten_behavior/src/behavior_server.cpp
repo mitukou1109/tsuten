@@ -9,11 +9,14 @@ namespace tsuten_behavior
 {
   using TapeLEDColor = tsuten_mechanism::TapeLEDController::Color;
 
-  const std::unordered_map<TableID, tf2::Transform> BehaviorServer::DEFAULT_TABLE_TFS =
-      {{TableID::DUAL_TABLE, tf2::Transform({{0, 0, 1}, 0}, {2.5, 2.4, 0})},
-       {TableID::MOVABLE_TABLE_1200, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
-       {TableID::MOVABLE_TABLE_1500, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
-       {TableID::MOVABLE_TABLE_1800, tf2::Transform({{0, 0, 1}, 0}, {6.5, 1.9, 0})}};
+  const tf2::Transform BehaviorServer::HOME_POSE({{0, 0, 1}, 0}, {0, 0, 0});
+
+  const std::unordered_map<TableID, tf2::Transform>
+      BehaviorServer::DEFAULT_TABLE_TFS =
+          {{TableID::DUAL_TABLE, tf2::Transform({{0, 0, 1}, 0}, {2.5, 2.4, 0})},
+           {TableID::MOVABLE_TABLE_1200, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
+           {TableID::MOVABLE_TABLE_1500, tf2::Transform({{0, 0, 1}, 0}, {4.5, 1.9, 0})},
+           {TableID::MOVABLE_TABLE_1800, tf2::Transform({{0, 0, 1}, 0}, {6.5, 1.9, 0})}};
 
   const std::unordered_map<ShooterID, double>
       BehaviorServer::DEFAULT_SHOOTER_VALVE_ON_DURATIONS_ =
@@ -103,13 +106,15 @@ namespace tsuten_behavior
       navigation_handler_.waitForMoveBaseActionServer(ros::Duration(0));
     }
 
-    std::vector<uint8_t> tables;
-    auto isDirectedToPerformAt = [&tables](uint8_t table)
-    { return std::find(tables.cbegin(), tables.cend(), table) != tables.cend(); };
+    std::vector<uint8_t> goal_tables;
+    auto isDirectedToPerformAt = [&goal_tables](uint8_t table)
+    { return std::any_of(goal_tables.cbegin(), goal_tables.cend(),
+                         [table](const auto &goal_table)
+                         { return table == goal_table; }); };
 
     {
       boost::lock_guard<boost::mutex> lock(mutex_);
-      tables = perform_goal_->tables;
+      goal_tables = perform_goal_->tables;
     }
 
     ROS_INFO("Performance started");
@@ -182,7 +187,7 @@ namespace tsuten_behavior
     publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_HOME);
     tape_led_controller_.setColor(TapeLEDColor::YELLOW);
     navigation_handler_.startNavigation(
-                           tf2::Stamped<tf2::Transform>(tf2::Transform({{0, 0, 1}, 0}),
+                           tf2::Stamped<tf2::Transform>(HOME_POSE,
                                                         ros::Time::now(), global_frame_))
         .waitForNavigationToComplete();
 

@@ -34,6 +34,8 @@ namespace tsuten_behavior
       bool bumper_r;
     };
 
+    static const tf2::Transform HOME_POSE;
+
     static const std::unordered_map<TableID, tf2::Transform> DEFAULT_TABLE_TFS;
 
     static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS_;
