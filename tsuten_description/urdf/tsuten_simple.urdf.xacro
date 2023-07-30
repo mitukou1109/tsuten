@@ -58,7 +58,7 @@
   </xacro:omni_wheel>
 
   <xacro:lidar parent="body_link">
-    <origin xyz="-30.69e-3 283.7e-3 -164.8e-3" rpy="0 0 ${radians(90)}" />
+    <origin xyz="0 349.5e-3 -171.5e-3" rpy="0 0 ${radians(90)}" />
   </xacro:lidar>
 
   <gazebo reference="body_link">
