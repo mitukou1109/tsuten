@@ -10,6 +10,7 @@ find_package(catkin REQUIRED
     roscpp
     tf2
     tf2_ros
+    tsuten_msgs
 )
 
 catkin_package(
@@ -21,6 +22,7 @@ catkin_package(
     roscpp
     tf2
     tf2_ros
+    tsuten_msgs
   INCLUDE_DIRS include
   LIBRARIES navigation_handler
 )

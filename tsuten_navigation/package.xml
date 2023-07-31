@@ -16,6 +16,7 @@
   <depend>roscpp</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>tsuten_msgs</depend>
 
   <exec_depend>navigation</exec_depend>
   <exec_depend>teb_local_planner</exec_depend>

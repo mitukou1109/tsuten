@@ -11,11 +11,6 @@
 
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
-  <node pkg="amcl" type="amcl" name="amcl" clear_params="true">
-    <rosparam command="load" file="$(arg config_dir)/amcl.yaml" subst_value="true" />
-    <remap from="scan" to="lidar/scan" />
-  </node>
-
   <node name="move_base" pkg="move_base" type="move_base" output="screen" clear_params="true">
     <rosparam file="$(arg config_dir)/move_base/move_base_params.yaml" command="load" />
     <rosparam file="$(arg config_dir)/move_base/costmap_common_params.yaml"
