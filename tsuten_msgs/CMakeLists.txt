@@ -5,6 +5,7 @@ find_package(catkin REQUIRED
   COMPONENTS
     actionlib
     dynamic_reconfigure
+    geometry_msgs
     message_generation
     rospy
     std_msgs
@@ -21,7 +22,7 @@ add_message_files(FILES
 )
 
 add_service_files(FILES
-  ResetOdometry.srv
+  CorrectRobotPosition.srv
   ResetShooter.srv
   ShootBottle.srv  
   ShootOnTable.srv
@@ -29,6 +30,7 @@ add_service_files(FILES
 
 generate_messages(DEPENDENCIES
   actionlib_msgs
+  geometry_msgs
   std_msgs
 )
 
@@ -40,6 +42,7 @@ catkin_package(
   CATKIN_DEPENDS
     actionlib
     dynamic_reconfigure
+    geometry_msgs
     message_runtime
     rospy
     std_msgs
