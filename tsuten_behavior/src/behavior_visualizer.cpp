@@ -34,7 +34,7 @@ namespace tsuten_behavior
       }
 
       pnh.param("global_frame", global_frame_, std::string("map"));
-      pnh.param("table_markers_publish_rate", table_markers_publish_rate_, 10.0);
+      pnh.param("table_markers_publish_rate", table_markers_publish_rate_, 1.0);
 
       shooter_state_text_pub_ =
           pnh.advertise<jsk_rviz_plugins::OverlayText>("shooter_state_text", 10, true);
