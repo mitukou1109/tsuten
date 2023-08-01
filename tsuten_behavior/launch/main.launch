@@ -12,7 +12,4 @@
 
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find tsuten_behavior)/rviz/main.rviz"
     required="true" output="screen" />
-
-  <node name="rqt_reconfigure" pkg="rqt_reconfigure" type="rqt_reconfigure"
-    launch-prefix="bash -c 'sleep 3.0; $0 $@' " />
 </launch>
