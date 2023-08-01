@@ -19,7 +19,7 @@
     <rosparam file="$(arg config_dir)/move_base/global_costmap_params.yaml"
       command="load" />
     <rosparam file="$(arg config_dir)/move_base/local_costmap_params.yaml" command="load" />
-    <rosparam file="$(arg config_dir)/move_base/base_local_planner_params.yaml"
+    <rosparam file="$(arg config_dir)/move_base/local_planner_params.yaml"
       command="load" />
   </node>
 
