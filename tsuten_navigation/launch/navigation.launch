@@ -3,11 +3,8 @@
   <arg name="map_name" value="field_dual_table_only" />
   <arg name="map_file" value="$(find tsuten_navigation)/map/$(arg map_name)/$(arg map_name).yaml" />
   <arg name="config_dir" />
-  <arg name="robot_type" />
 
-  <include file="$(find tsuten_description)/launch/spawn_robot.launch">
-    <arg name="robot_type" value="$(arg robot_type)" />
-  </include>
+  <include file="$(find tsuten_description)/launch/spawn_robot.launch" />
 
   <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
 
