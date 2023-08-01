@@ -5,6 +5,10 @@
   <xacro:property name="body_visual_mesh_path" value="$(find tsuten_description)/meshes/tsuten.stl" />
   <xacro:property name="body_collision_mesh_path"
     value="$(find tsuten_description)/meshes/tsuten_lq.stl" />
+  <xacro:property name="body_mass" value="30.0" />
+  <xacro:property name="body_inertia_box_x" value="800.0e-3" />
+  <xacro:property name="body_inertia_box_y" value="800.0e-3" />
+  <xacro:property name="body_inertia_box_z" value="100.0e-3" />
 
   <link name="base_link" />
   <link name="body_link">
@@ -20,10 +24,11 @@
       </geometry>
     </collision>
     <inertial>
-      <origin xyz="98.435e-3 -264.408e-3 77.899e-3" />
-      <mass value="29987.685e-3" />
-      <inertia ixx="1.303e+0" ixy="1.556e-1" ixz="3.533e-2" iyy="1.465e+0" iyz="1.362e-2"
-        izz="1.212e+0" />
+      <origin xyz="-30.69e-3 -3.279e-3 -242.3e-3" />
+      <mass value="${body_mass}" />
+      <inertia ixx="${body_mass*(body_inertia_box_y**2+body_inertia_box_z**2)/12}" ixy="0" ixz="0"
+        iyy="${body_mass*(body_inertia_box_x**2+body_inertia_box_z**2)/12}" iyz="0"
+        izz="${body_mass*(body_inertia_box_x**2+body_inertia_box_y**2)/12}" />
     </inertial>
   </link>
   <joint name="body_joint" type="fixed">
