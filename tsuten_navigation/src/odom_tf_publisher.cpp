@@ -18,7 +18,7 @@ namespace tsuten_navigation
       pnh.param("odom_frame", odom_frame_, std::string("odom"));
       pnh.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
       pnh.param("odom_topic", odom_topic_, std::string("odom"));
-      pnh.param("publish_rate", publish_rate_, 10.0);
+      pnh.param("publish_rate", publish_rate_, 20.0);
 
       odom_sub_ = nh.subscribe(odom_topic_, 10, &OdomTFPublisher::odomCallback, this);
 
@@ -41,14 +41,6 @@ namespace tsuten_navigation
       map_tf_msg.transform = tf2::toMsg(map_tf_);
 
       tf_broadcaster_.sendTransform(map_tf_msg);
-
-      geometry_msgs::TransformStamped odom_tf_msg;
-      odom_tf_msg.header.stamp = ros::Time::now();
-      odom_tf_msg.header.frame_id = odom_frame_;
-      odom_tf_msg.child_frame_id = robot_base_frame_;
-      odom_tf_msg.transform = tf2::toMsg(odom_tf_);
-
-      tf_broadcaster_.sendTransform(odom_tf_msg);
     }
 
     void odomCallback(const nav_msgs::Odometry &odom)
