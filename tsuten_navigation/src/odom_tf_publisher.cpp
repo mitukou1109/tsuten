@@ -35,7 +35,7 @@ namespace tsuten_navigation
     void publishOdomTF(const ros::TimerEvent &event)
     {
       geometry_msgs::TransformStamped map_tf_msg;
-      map_tf_msg.header.stamp = ros::Time::now();
+      map_tf_msg.header.stamp = ros::Time::now() + ros::Duration(0.05);
       map_tf_msg.header.frame_id = global_frame_;
       map_tf_msg.child_frame_id = odom_frame_;
       map_tf_msg.transform = tf2::toMsg(map_tf_);
