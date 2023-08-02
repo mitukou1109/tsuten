@@ -15,7 +15,7 @@ namespace tsuten_behavior
   class BehaviorVisualizer
   {
   public:
-    BehaviorVisualizer()
+    BehaviorVisualizer() : tf_listener_(tf_buffer_)
     {
       ros::NodeHandle nh, pnh("~"), behavior_server_nh("behavior_server");
 
@@ -171,7 +171,10 @@ namespace tsuten_behavior
         tf2::Transform tf;
         if (getTF(table_id, tf))
         {
-          tf2::toMsg(tf, table_marker.pose);
+          tf2::toMsg(
+              tf * tf2::Transform(tf2::Quaternion::getIdentity(),
+                                  {0, 0, TABLE_SIZES.at(table_id).at(2) / 2}),
+              table_marker.pose);
           table_markers_msg.markers.push_back(table_marker);
         }
       }
@@ -183,13 +186,11 @@ namespace tsuten_behavior
     {
       try
       {
-        tf2_ros::Buffer tf_buffer;
-        tf2_ros::TransformListener tf_listener(tf_buffer);
-        tf2::fromMsg(tf_buffer.lookupTransform(
-                                  global_frame_, TABLE_NAMES.at(table_id) + "_link",
-                                  ros::Time(0), ros::Duration(5.0))
-                         .transform,
-                     tf);
+        tf2::fromMsg(
+            tf_buffer_.lookupTransform(global_frame_, TABLE_NAMES.at(table_id) + "_link",
+                                       ros::Time(0), ros::Duration(1.0))
+                .transform,
+            tf);
 
         return true;
       }
@@ -247,6 +248,9 @@ namespace tsuten_behavior
     ros::Publisher table_markers_pub_;
 
     ros::Timer publish_table_markers_timer_;
+
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tf_listener_;
 
     std::unordered_map<TableID, visualization_msgs::Marker> table_markers_;
 

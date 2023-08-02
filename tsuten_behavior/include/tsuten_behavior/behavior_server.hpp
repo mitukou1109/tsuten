@@ -6,8 +6,7 @@
 #include <actionlib/server/simple_action_server.h>
 #include <dynamic_reconfigure/server.h>
 #include <tf2/utils.h>
-#include <tf2_ros/static_transform_broadcaster.h>
-#include <tf2_ros/transform_broadcaster.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <tsuten_behavior/constants.hpp>
 #include <tsuten_mechanism/bottle_shooter_controller.hpp>
@@ -36,8 +35,6 @@ namespace tsuten_behavior
 
     static const tf2::Transform HOME_POSE;
 
-    static const std::unordered_map<TableID, tf2::Transform> DEFAULT_TABLE_TFS;
-
     static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS_;
 
     void performThread();
@@ -51,12 +48,6 @@ namespace tsuten_behavior
     void preemptPerformAction();
 
     void resetToInitialState();
-
-    void initializeTableTFs();
-
-    void publishTF(const ros::TimerEvent &event);
-
-    geometry_msgs::TransformStamped createTableTFMsg(TableID table_id);
 
     tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
 
@@ -76,7 +67,8 @@ namespace tsuten_behavior
 
     ros::NodeHandle pnh_;
 
-    std::unordered_map<TableID, tf2::Transform> table_tfs_;
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tf_listener_;
 
     actionlib::SimpleActionServer<tsuten_msgs::PerformAction> perform_action_server_;
 
@@ -88,14 +80,8 @@ namespace tsuten_behavior
 
     ros::Subscriber sensor_states_sub_;
 
-    ros::Timer publish_tf_timer_;
-
     ros::ServiceServer reset_shooter_service_server_;
     ros::ServiceServer shoot_on_table_service_server_;
-
-    tf2_ros::StaticTransformBroadcaster static_tf_broadcaster_;
-
-    tf2_ros::TransformBroadcaster tf_broadcaster_;
 
     std::unordered_map<ShooterID, double> shooter_valve_on_durations_;
 
@@ -112,8 +98,7 @@ namespace tsuten_behavior
     SensorStates sensor_states_;
 
     std::string global_frame_;
-
-    double tf_publish_rate_;
+    std::string robot_base_frame_;
 
     double goal_distance_from_table_;
 

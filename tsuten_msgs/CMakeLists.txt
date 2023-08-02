@@ -36,6 +36,7 @@ generate_messages(DEPENDENCIES
 
 generate_dynamic_reconfigure_options(
   cfg/BehaviorServer.cfg
+  cfg/TableManager.cfg
 )
 
 catkin_package(

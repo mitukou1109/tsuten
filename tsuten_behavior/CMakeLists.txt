@@ -85,3 +85,15 @@ target_include_directories(behavior_visualizer
 target_link_libraries(behavior_visualizer
   ${catkin_LIBRARIES}
 )
+
+add_executable(table_manager
+  src/table_manager.cpp
+)
+target_include_directories(table_manager
+  PUBLIC
+    include
+    ${catkin_INCLUDE_DIRS}
+)
+target_link_libraries(table_manager
+  ${catkin_LIBRARIES}
+)

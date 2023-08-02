@@ -4,6 +4,10 @@
 
   <include file="$(find tsuten_navigation)/launch/navigation.launch" pass_all_args="true" />
 
+  <node name="table_manager" pkg="tsuten_behavior" type="table_manager" output="screen">
+    <rosparam file="$(arg config_dir)/table_manager.yaml" command="load" />
+  </node>
+
   <node name="behavior_server" pkg="tsuten_behavior" type="behavior_server" output="screen">
     <rosparam file="$(arg config_dir)/behavior_server.yaml" command="load" />
   </node>

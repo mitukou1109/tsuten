@@ -11,17 +11,6 @@ namespace tsuten_behavior
 
   const tf2::Transform BehaviorServer::HOME_POSE(tf2::Quaternion::getIdentity(), {0, 0, 0});
 
-  const std::unordered_map<TableID, tf2::Transform>
-      BehaviorServer::DEFAULT_TABLE_TFS =
-          {{TableID::DUAL_TABLE, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                {2.5, 2.4, 0})},
-           {TableID::MOVABLE_TABLE_1200, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                        {4.5, 1.9, 0})},
-           {TableID::MOVABLE_TABLE_1500, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                        {4.5, 1.9, 0})},
-           {TableID::MOVABLE_TABLE_1800, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                        {6.5, 1.9, 0})}};
-
   const std::unordered_map<ShooterID, double>
       BehaviorServer::DEFAULT_SHOOTER_VALVE_ON_DURATIONS_ =
           {{ShooterID::DUAL_TABLE_LOWER, 0.5},
@@ -33,22 +22,18 @@ namespace tsuten_behavior
 
   BehaviorServer::BehaviorServer()
       : pnh_("~"),
-        table_tfs_(DEFAULT_TABLE_TFS),
+        tf_listener_(tf_buffer_),
         shooter_valve_on_durations_(DEFAULT_SHOOTER_VALVE_ON_DURATIONS_),
         perform_action_server_(pnh_, "perform", false),
         reconfigure_server_(reconfigure_mutex_),
         is_goal_available_(false)
   {
     pnh_.param("global_frame", global_frame_, std::string("map"));
-    pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
+    pnh_.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
     pnh_.param("goal_distance_from_table", goal_distance_from_table_, 0.6);
 
     ros::NodeHandle nh;
     sensor_states_sub_ = nh.subscribe("sensor_states", 10, &BehaviorServer::sensorStatesCallback, this);
-
-    initializeTableTFs();
-
-    static_tf_broadcaster_.sendTransform(createTableTFMsg(TableID::DUAL_TABLE));
 
     initializeShooters();
 
@@ -89,9 +74,6 @@ namespace tsuten_behavior
         boost::bind(&BehaviorServer::reconfigureParameters, this, _1, _2));
 
     navigation_handler_.waitForMoveBaseActionServer(ros::Duration(3.0));
-
-    publish_tf_timer_ =
-        pnh_.createTimer(ros::Rate(tf_publish_rate_), &BehaviorServer::publishTF, this);
 
     launch_perform_thread_ = std::make_unique<boost::thread>([this]
                                                              { launchPerformThread(); });
@@ -268,106 +250,31 @@ namespace tsuten_behavior
     tape_led_controller_.setColor(TapeLEDColor::RED);
   }
 
-  void BehaviorServer::initializeTableTFs()
-  {
-    XmlRpc::XmlRpcValue table_position_list;
-    if (pnh_.getParam("table_position", table_position_list))
-    {
-      for (auto &table_position_pair : table_position_list)
-      {
-        auto &table_name = table_position_pair.first;
-        auto &table_position = table_position_pair.second;
-
-        if (table_position.getType() == XmlRpc::XmlRpcValue::TypeArray)
-        {
-          auto table_name_pair_itr =
-              std::find_if(TABLE_NAMES.cbegin(), TABLE_NAMES.cend(),
-                           [&table_name](const std::pair<TableID, std::string> &table_name_pair)
-                           { return table_name == table_name_pair.second &&
-                                    table_name != TABLE_NAMES.at(TableID::DUAL_TABLE_LOWER) &&
-                                    table_name != TABLE_NAMES.at(TableID::DUAL_TABLE_UPPER); });
-
-          if (table_name_pair_itr != TABLE_NAMES.cend())
-          {
-            auto &table_id = (*table_name_pair_itr).first;
-            try
-            {
-              table_tfs_.at(table_id) =
-                  tf2::Transform(DEFAULT_TABLE_TFS.at(table_id).getRotation(),
-                                 tf2::Vector3(static_cast<double>(table_position[0]),
-                                              static_cast<double>(table_position[1]),
-                                              static_cast<double>(table_position[2])));
-            }
-            catch (const XmlRpc::XmlRpcException &exception)
-            {
-              ROS_ERROR(
-                  "Error parsing %s position: %s. Make sure to set parameter in double type.\n"
-                  "Using default values.",
-                  table_name.c_str(), exception.getMessage().c_str());
-            }
-          }
-          else
-          {
-            ROS_ERROR("Invalid table_name: %s", table_name.c_str());
-          }
-        }
-        else
-        {
-          ROS_ERROR("Invalid %s position parameter: %s",
-                    table_name.c_str(),
-                    static_cast<std::string>(table_position).c_str());
-        }
-      }
-    }
-    else
-    {
-      ROS_WARN("Table positions not set, using default values");
-    }
-
-    for (auto &table_tf_pair : table_tfs_)
-    {
-      auto &table_id = table_tf_pair.first;
-      auto &table_tf = table_tf_pair.second;
-
-      table_tf.getOrigin().setZ(TABLE_SIZES.at(table_id).at(2) / 2); // for visualization
-    }
-  }
-
-  void BehaviorServer::publishTF(const ros::TimerEvent &event)
-  {
-    for (auto &table_tf_pair : table_tfs_)
-    {
-      auto &table_id = table_tf_pair.first;
-
-      if (table_id == TableID::DUAL_TABLE)
-      {
-        continue;
-      }
-
-      tf_broadcaster_.sendTransform(createTableTFMsg(table_id));
-    }
-  }
-
-  geometry_msgs::TransformStamped BehaviorServer::createTableTFMsg(TableID table_id)
-  {
-    geometry_msgs::TransformStamped table_tf_msg;
-    table_tf_msg.header.frame_id = global_frame_;
-    table_tf_msg.header.stamp = ros::Time::now();
-    table_tf_msg.child_frame_id = TABLE_NAMES.at(table_id) + "_link";
-    table_tf_msg.transform = tf2::toMsg(table_tfs_.at(table_id));
-
-    return table_tf_msg;
-  }
-
   tf2::Stamped<tf2::Transform> BehaviorServer::getGoal(const TableID &table_id)
   {
+    tf2::Transform table_tf;
+    while (true)
+    {
+      try
+      {
+        tf2::fromMsg(tf_buffer_.lookupTransform(global_frame_, TABLE_NAMES.at(table_id) + "_link",
+                                                ros::Time(0), ros::Duration(1.0))
+                         .transform,
+                     table_tf);
+        break;
+      }
+      catch (const tf2::TransformException &exception)
+      {
+        ROS_ERROR("%s", exception.what());
+      }
+    }
+
     tf2::Transform goal_transform(
-        {{0, 0, 1}, 0},
-        {0, -(TABLE_SIZES.at(table_id).at(1) / 2 + goal_distance_from_table_),
-         -TABLE_SIZES.at(table_id).at(2) / 2});
+        tf2::Quaternion::getIdentity(),
+        {0, -(TABLE_SIZES.at(table_id).at(1) / 2 + goal_distance_from_table_), 0});
 
     return tf2::Stamped<tf2::Transform>(
-        table_tfs_.at(table_id) * goal_transform, ros::Time::now(), global_frame_);
+        table_tf * goal_transform, ros::Time::now(), global_frame_);
   }
 
   void BehaviorServer::moveUntilBumperIsPressed()
@@ -492,15 +399,6 @@ namespace tsuten_behavior
   void BehaviorServer::updateReconfigurableParameters()
   {
     BehaviorServerConfig config;
-    config.movable_table_1200_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1200)
-                                               .getOrigin()
-                                               .getY();
-    config.movable_table_1500_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1500)
-                                               .getOrigin()
-                                               .getY();
-    config.movable_table_1800_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1800)
-                                               .getOrigin()
-                                               .getY();
     config.goal_distance_from_table = goal_distance_from_table_;
     {
       boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
@@ -511,16 +409,6 @@ namespace tsuten_behavior
   void BehaviorServer::reconfigureParameters(
       tsuten_behavior::BehaviorServerConfig &config, uint32_t level)
   {
-    table_tfs_.at(TableID::MOVABLE_TABLE_1200)
-        .getOrigin()
-        .setY(config.movable_table_1200_position_y);
-    table_tfs_.at(TableID::MOVABLE_TABLE_1500)
-        .getOrigin()
-        .setY(config.movable_table_1500_position_y);
-    table_tfs_.at(TableID::MOVABLE_TABLE_1800)
-        .getOrigin()
-        .setY(config.movable_table_1800_position_y);
-
     goal_distance_from_table_ = config.goal_distance_from_table;
   }
 
