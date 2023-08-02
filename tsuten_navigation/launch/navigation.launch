@@ -23,5 +23,5 @@
       command="load" />
   </node>
 
-  <node name="odom_tf_publisher" pkg="tsuten_navigation" type="odom_tf_publisher" />
+  <node name="localization_helper" pkg="tsuten_navigation" type="localization_helper" />
 </launch>

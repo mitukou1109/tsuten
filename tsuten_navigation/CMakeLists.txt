@@ -39,14 +39,14 @@ target_link_libraries(navigation_handler
   ${catkin_LIBRARIES}
 )
 
-add_executable(odom_tf_publisher
-  src/odom_tf_publisher.cpp
+add_executable(localization_helper
+  src/localization_helper.cpp
 )
-target_include_directories(odom_tf_publisher
+target_include_directories(localization_helper
   PUBLIC
     ${catkin_INCLUDE_DIRS}
 )
-target_link_libraries(odom_tf_publisher
+target_link_libraries(localization_helper
   ${catkin_LIBRARIES}
 )
 

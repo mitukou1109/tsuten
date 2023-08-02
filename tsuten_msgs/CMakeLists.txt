@@ -22,7 +22,7 @@ add_message_files(FILES
 )
 
 add_service_files(FILES
-  CorrectRobotPosition.srv
+  CorrectRobotPose.srv
   ResetShooter.srv
   ShootBottle.srv  
   ShootOnTable.srv
