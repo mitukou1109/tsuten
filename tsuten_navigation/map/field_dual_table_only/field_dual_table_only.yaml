@@ -1,6 +1,6 @@
 image: field_dual_table_only.png
-resolution: 0.0128
-origin: [-1.0, -0.6, 0]
+resolution: 0.01255
+origin: [-0.875, -0.575, 0]
 occupied_thresh: 0.65
 free_thresh: 0.196
 negate: 0
