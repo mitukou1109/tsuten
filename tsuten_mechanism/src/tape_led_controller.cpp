@@ -20,18 +20,18 @@ namespace tsuten_mechanism
     command_pub_ = nh.advertise<tsuten_msgs::TapeLEDCommand>("tape_led_command", 10);
   }
 
-  void TapeLEDController::setColor(Color color, bool blink)
+  void TapeLEDController::setColor(Color color, STATE state)
   {
-    command(COLOR_RGBS.at(color), blink);
+    command(COLOR_RGBS.at(color), state);
   }
 
-  void TapeLEDController::command(const std::array<double, 3> &rgb, bool blink)
+  void TapeLEDController::command(const std::array<double, 3> &rgb, STATE state)
   {
     tsuten_msgs::TapeLEDCommand command;
     command.color.r = rgb.at(0);
     command.color.g = rgb.at(1);
     command.color.b = rgb.at(2);
-    command.blink = blink;
+    command.blink = (state == STATE::BLINK);
 
     command_pub_.publish(command);
   }

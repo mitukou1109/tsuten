@@ -18,11 +18,17 @@ namespace tsuten_mechanism
       NONE
     };
 
+    enum class STATE
+    {
+      STEADY,
+      BLINK
+    };
+
     TapeLEDController();
 
-    void setColor(Color color, bool blink = false);
+    void setColor(Color color, STATE state);
 
-    void command(const std::array<double, 3> &rgb, bool blink);
+    void command(const std::array<double, 3> &rgb, STATE state);
 
   private:
     static const std::unordered_map<Color, std::array<double, 3>> COLOR_RGBS;

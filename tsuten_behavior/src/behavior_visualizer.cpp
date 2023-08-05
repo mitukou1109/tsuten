@@ -69,7 +69,7 @@ namespace tsuten_behavior
 
     static const std::unordered_map<ValveState, std::string> SHOOTER_STATE_TEXTS;
 
-    static const std::unordered_map<TableID, std::array<float, 4>>
+    static const std::unordered_map<TableBaseID, std::array<float, 4>>
         TABLE_MARKER_COLORS;
 
     void initializeShooterStates()
@@ -121,32 +121,27 @@ namespace tsuten_behavior
       const std::string table_mesh_resource_dir =
           ros::package::getPath("tsuten_description") + "/meshes";
 
-      for (auto &table_name_pair : TABLE_NAMES)
+      for (auto &table_name_pair : TABLE_BASE_NAMES)
       {
-        auto &table_id = table_name_pair.first;
-        auto table_name = table_name_pair.second;
-
-        if (table_id == TableID::DUAL_TABLE_LOWER || table_id == TableID::DUAL_TABLE_UPPER)
-        {
-          continue;
-        }
+        auto &table_base_id = table_name_pair.first;
+        auto table_base_name = table_name_pair.second;
 
         visualization_msgs::Marker table_marker;
         table_marker.header.frame_id = global_frame_;
-        table_marker.ns = table_name;
-        table_marker.id = static_cast<int32_t>(table_id);
+        table_marker.ns = table_base_name;
+        table_marker.id = static_cast<int32_t>(table_base_id);
         table_marker.type = visualization_msgs::Marker::CUBE;
         // table_marker.type = visualization_msgs::Marker::MESH_RESOURCE;
         // table_marker.mesh_resource = table_mesh_resource_dir + "/" + table_name + ".stl";
-        table_marker.scale.x = TABLE_SIZES.at(table_id).at(0);
-        table_marker.scale.y = TABLE_SIZES.at(table_id).at(1);
-        table_marker.scale.z = TABLE_SIZES.at(table_id).at(2);
-        table_marker.color.r = TABLE_MARKER_COLORS.at(table_id).at(0);
-        table_marker.color.g = TABLE_MARKER_COLORS.at(table_id).at(1);
-        table_marker.color.b = TABLE_MARKER_COLORS.at(table_id).at(2);
-        table_marker.color.a = TABLE_MARKER_COLORS.at(table_id).at(3);
+        table_marker.scale.x = TABLE_SIZES.at(table_base_id).at(0);
+        table_marker.scale.y = TABLE_SIZES.at(table_base_id).at(1);
+        table_marker.scale.z = TABLE_SIZES.at(table_base_id).at(2);
+        table_marker.color.r = TABLE_MARKER_COLORS.at(table_base_id).at(0);
+        table_marker.color.g = TABLE_MARKER_COLORS.at(table_base_id).at(1);
+        table_marker.color.b = TABLE_MARKER_COLORS.at(table_base_id).at(2);
+        table_marker.color.a = TABLE_MARKER_COLORS.at(table_base_id).at(3);
 
-        table_markers_.insert({table_id, table_marker});
+        table_markers_.insert({table_base_id, table_marker});
       }
     }
 
@@ -163,17 +158,17 @@ namespace tsuten_behavior
 
       for (auto &table_marker_pair : table_markers_)
       {
-        auto &table_id = table_marker_pair.first;
+        auto &table_base_id = table_marker_pair.first;
         auto &table_marker = table_marker_pair.second;
 
         table_marker.header.stamp = ros::Time::now();
 
         tf2::Transform tf;
-        if (getTF(table_id, tf))
+        if (getTableTF(table_base_id, tf))
         {
           tf2::toMsg(
               tf * tf2::Transform(tf2::Quaternion::getIdentity(),
-                                  {0, 0, TABLE_SIZES.at(table_id).at(2) / 2}),
+                                  {0, 0, TABLE_SIZES.at(table_base_id).at(2) / 2}),
               table_marker.pose);
           table_markers_msg.markers.push_back(table_marker);
         }
@@ -182,12 +177,12 @@ namespace tsuten_behavior
       table_markers_pub_.publish(table_markers_msg);
     }
 
-    bool getTF(TableID table_id, tf2::Transform &tf)
+    bool getTableTF(TableBaseID table_id, tf2::Transform &tf)
     {
       try
       {
         tf2::fromMsg(
-            tf_buffer_.lookupTransform(global_frame_, TABLE_NAMES.at(table_id) + "_link",
+            tf_buffer_.lookupTransform(global_frame_, TABLE_BASE_NAMES.at(table_id) + "_link",
                                        ros::Time(0), ros::Duration(1.0))
                 .transform,
             tf);
@@ -252,7 +247,7 @@ namespace tsuten_behavior
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
 
-    std::unordered_map<TableID, visualization_msgs::Marker> table_markers_;
+    std::unordered_map<TableBaseID, visualization_msgs::Marker> table_markers_;
 
     ros::Publisher perform_feedback_text_pub_;
 
@@ -271,12 +266,12 @@ namespace tsuten_behavior
           {{ValveState::OFF, "<span style=\"color : blue;\">OFF</span>"},
            {ValveState::ON, "<span style=\"color : red;\">ON</span> "}};
 
-  const std::unordered_map<TableID, std::array<float, 4>>
+  const std::unordered_map<TableBaseID, std::array<float, 4>>
       BehaviorVisualizer::TABLE_MARKER_COLORS =
-          {{TableID::DUAL_TABLE, {1.0, 0.0, 0.0, 1.0}},
-           {TableID::MOVABLE_TABLE_1200, {1.0, 1.0, 0.0, 1.0}},
-           {TableID::MOVABLE_TABLE_1500, {1.0, 1.0, 0.0, 1.0}},
-           {TableID::MOVABLE_TABLE_1800, {1.0, 1.0, 0.0, 1.0}}};
+          {{TableBaseID::DUAL_TABLE, {1.0, 0.0, 0.0, 1.0}},
+           {TableBaseID::MOVABLE_TABLE_1200, {1.0, 1.0, 0.0, 1.0}},
+           {TableBaseID::MOVABLE_TABLE_1500, {1.0, 1.0, 0.0, 1.0}},
+           {TableBaseID::MOVABLE_TABLE_1800, {1.0, 1.0, 0.0, 1.0}}};
 } // namespace tsuten_behavior
 
 int main(int argc, char **argv)

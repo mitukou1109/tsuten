@@ -27,21 +27,34 @@ namespace tsuten_behavior
     ~BehaviorServer();
 
   private:
+    enum class PerformPhase
+    {
+      MOVE,
+      ALIGN,
+      SHOOT,
+      RETURN
+    };
+
     struct SensorStates
     {
       bool bumper_l;
       bool bumper_r;
     };
 
+    static const std::unordered_map<PerformPhase, std::unordered_map<TableID, uint8_t>>
+        PERFORM_FEEDBACK_STATUS;
+
+    static const std::vector<TableID> PERFORM_SEQUENCE;
+
     static const tf2::Transform HOME_POSE;
 
-    static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS_;
+    static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS;
 
     void performThread();
 
     void launchPerformThread();
 
-    void publishPerformFeedback(uint8_t status);
+    void publishPerformFeedback(const PerformPhase &phase, const TableID &table_id);
 
     void acceptPerformGoal();
 
@@ -51,7 +64,7 @@ namespace tsuten_behavior
 
     tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
 
-    void moveUntilBumperIsPressed();
+    void alignAtTable(const TableID &table_id);
 
     void initializeShooters();
 

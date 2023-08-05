@@ -25,7 +25,7 @@ namespace tsuten_behavior
 
       initializeTableTFs();
 
-      static_tf_broadcaster_.sendTransform(createTableTFMsg(TableID::DUAL_TABLE));
+      static_tf_broadcaster_.sendTransform(createTableTFMsg(TableBaseID::DUAL_TABLE));
 
       updateReconfigurableParameters();
 
@@ -37,7 +37,7 @@ namespace tsuten_behavior
     }
 
   private:
-    static const std::unordered_map<TableID, tf2::Transform> DEFAULT_TABLE_TFS;
+    static const std::unordered_map<TableBaseID, tf2::Transform> DEFAULT_TABLE_TFS;
 
     void initializeTableTFs()
     {
@@ -46,46 +46,43 @@ namespace tsuten_behavior
       {
         for (auto &table_position_pair : table_position_list)
         {
-          auto &table_name = table_position_pair.first;
+          auto &table_base_name = table_position_pair.first;
           auto &table_position = table_position_pair.second;
 
           if (table_position.getType() == XmlRpc::XmlRpcValue::TypeArray)
           {
-            auto table_name_pair_itr =
-                std::find_if(TABLE_NAMES.cbegin(), TABLE_NAMES.cend(),
-                             [&table_name](const std::pair<TableID, std::string> &table_name_pair)
-                             { return table_name == table_name_pair.second &&
-                                      table_name != TABLE_NAMES.at(TableID::DUAL_TABLE_LOWER) &&
-                                      table_name != TABLE_NAMES.at(TableID::DUAL_TABLE_UPPER); });
+            auto table_base_name_pair_itr = std::find_if(
+                TABLE_BASE_NAMES.cbegin(), TABLE_BASE_NAMES.cend(),
+                [&table_base_name](const std::pair<TableBaseID, std::string> &table_base_name_pair)
+                { return table_base_name == table_base_name_pair.second; });
 
-            if (table_name_pair_itr != TABLE_NAMES.cend())
+            if (table_base_name_pair_itr != TABLE_BASE_NAMES.cend())
             {
-              auto &table_id = (*table_name_pair_itr).first;
+              auto &table_base_id = (*table_base_name_pair_itr).first;
               try
               {
-                table_tfs_.at(table_id) =
-                    tf2::Transform(DEFAULT_TABLE_TFS.at(table_id).getRotation(),
-                                   tf2::Vector3(static_cast<double>(table_position[0]),
-                                                static_cast<double>(table_position[1]),
-                                                static_cast<double>(table_position[2])));
+                table_tfs_.at(table_base_id)
+                    .setOrigin({static_cast<double>(table_position[0]),
+                                static_cast<double>(table_position[1]),
+                                0});
               }
               catch (const XmlRpc::XmlRpcException &exception)
               {
                 ROS_ERROR(
                     "Error parsing %s position: %s. Make sure to set parameter in double type.\n"
                     "Using default values.",
-                    table_name.c_str(), exception.getMessage().c_str());
+                    table_base_name.c_str(), exception.getMessage().c_str());
               }
             }
             else
             {
-              ROS_ERROR("Invalid table_name: %s", table_name.c_str());
+              ROS_ERROR("Invalid table_name: %s", table_base_name.c_str());
             }
           }
           else
           {
             ROS_ERROR("Invalid %s position parameter: %s",
-                      table_name.c_str(),
+                      table_base_name.c_str(),
                       static_cast<std::string>(table_position).c_str());
           }
         }
@@ -96,13 +93,13 @@ namespace tsuten_behavior
       }
     }
 
-    geometry_msgs::TransformStamped createTableTFMsg(TableID table_id)
+    geometry_msgs::TransformStamped createTableTFMsg(const TableBaseID &table_base_id)
     {
       geometry_msgs::TransformStamped table_tf_msg;
       table_tf_msg.header.frame_id = global_frame_;
       table_tf_msg.header.stamp = ros::Time::now();
-      table_tf_msg.child_frame_id = TABLE_NAMES.at(table_id) + "_link";
-      table_tf_msg.transform = tf2::toMsg(table_tfs_.at(table_id));
+      table_tf_msg.child_frame_id = TABLE_BASE_NAMES.at(table_base_id) + "_link";
+      table_tf_msg.transform = tf2::toMsg(table_tfs_.at(table_base_id));
 
       return table_tf_msg;
     }
@@ -123,13 +120,13 @@ namespace tsuten_behavior
     void updateReconfigurableParameters()
     {
       TableManagerConfig config;
-      config.movable_table_1200_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1200)
+      config.movable_table_1200_position_y = table_tfs_.at(TableBaseID::MOVABLE_TABLE_1200)
                                                  .getOrigin()
                                                  .getY();
-      config.movable_table_1500_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1500)
+      config.movable_table_1500_position_y = table_tfs_.at(TableBaseID::MOVABLE_TABLE_1500)
                                                  .getOrigin()
                                                  .getY();
-      config.movable_table_1800_position_y = table_tfs_.at(TableID::MOVABLE_TABLE_1800)
+      config.movable_table_1800_position_y = table_tfs_.at(TableBaseID::MOVABLE_TABLE_1800)
                                                  .getOrigin()
                                                  .getY();
       {
@@ -140,13 +137,13 @@ namespace tsuten_behavior
 
     void reconfigureParameters(tsuten_behavior::TableManagerConfig &config, uint32_t level)
     {
-      table_tfs_.at(TableID::MOVABLE_TABLE_1200)
+      table_tfs_.at(TableBaseID::MOVABLE_TABLE_1200)
           .getOrigin()
           .setY(config.movable_table_1200_position_y);
-      table_tfs_.at(TableID::MOVABLE_TABLE_1500)
+      table_tfs_.at(TableBaseID::MOVABLE_TABLE_1500)
           .getOrigin()
           .setY(config.movable_table_1500_position_y);
-      table_tfs_.at(TableID::MOVABLE_TABLE_1800)
+      table_tfs_.at(TableBaseID::MOVABLE_TABLE_1800)
           .getOrigin()
           .setY(config.movable_table_1800_position_y);
     }
@@ -165,20 +162,23 @@ namespace tsuten_behavior
 
     std::unordered_map<TableID, tf2::Transform> table_tfs_;
 
+    std::unordered_map<TableBaseID, tf2::Transform> table_tfs_;
+
+
     std::string global_frame_;
 
     double tf_publish_rate_;
   };
 
-  const std::unordered_map<TableID, tf2::Transform> TableManager::DEFAULT_TABLE_TFS =
-      {{TableID::DUAL_TABLE, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                            {2.5, 2.4, 0})},
-       {TableID::MOVABLE_TABLE_1200, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                    {4.5, 1.9, 0})},
-       {TableID::MOVABLE_TABLE_1500, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                    {4.5, 1.9, 0})},
-       {TableID::MOVABLE_TABLE_1800, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                    {6.5, 1.9, 0})}};
+  const std::unordered_map<TableBaseID, tf2::Transform> TableManager::DEFAULT_TABLE_TFS =
+      {{TableBaseID::DUAL_TABLE, tf2::Transform(tf2::Quaternion::getIdentity(),
+                                                {2.5, 2.4, 0})},
+       {TableBaseID::MOVABLE_TABLE_1200, tf2::Transform(tf2::Quaternion::getIdentity(),
+                                                        {4.5, 1.9, 0})},
+       {TableBaseID::MOVABLE_TABLE_1500, tf2::Transform(tf2::Quaternion::getIdentity(),
+                                                        {4.5, 1.9, 0})},
+       {TableBaseID::MOVABLE_TABLE_1800, tf2::Transform(tf2::Quaternion::getIdentity(),
+                                                        {6.5, 1.9, 0})}};
 } // namespace tsuten_behavior
 
 int main(int argc, char **argv)

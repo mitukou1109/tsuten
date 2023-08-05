@@ -8,11 +8,62 @@
 namespace tsuten_behavior
 {
   using TapeLEDColor = tsuten_mechanism::TapeLEDController::Color;
+  using TapeLEDState = tsuten_mechanism::TapeLEDController::STATE;
+
+  const std::unordered_map<TableID, uint8_t> TABLE_ID_TO_PERFORM_GOAL_TABLES =
+      {{TableID::DUAL_TABLE_LOWER, tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER},
+       {TableID::DUAL_TABLE_UPPER, tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER},
+       {TableID::MOVABLE_TABLE_1200, tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200},
+       {TableID::MOVABLE_TABLE_1500, tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500},
+       {TableID::MOVABLE_TABLE_1800, tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800}};
+
+  const std::unordered_map<BehaviorServer::PerformPhase, std::unordered_map<TableID, uint8_t>>
+      BehaviorServer::PERFORM_FEEDBACK_STATUS =
+          {{PerformPhase::MOVE,
+            {{TableID::DUAL_TABLE_LOWER,
+              tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE},
+             {TableID::DUAL_TABLE_UPPER,
+              tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE},
+             {TableID::MOVABLE_TABLE_1200,
+              tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1200},
+             {TableID::MOVABLE_TABLE_1500,
+              tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1500},
+             {TableID::MOVABLE_TABLE_1800,
+              tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800}}},
+           {PerformPhase::ALIGN,
+            {{TableID::DUAL_TABLE_LOWER,
+              tsuten_msgs::PerformFeedback::ALIGNING_AT_DUAL_TABLE_LOWER},
+             {TableID::DUAL_TABLE_UPPER,
+              tsuten_msgs::PerformFeedback::ALIGNING_AT_DUAL_TABLE_UPPER},
+             {TableID::MOVABLE_TABLE_1200,
+              tsuten_msgs::PerformFeedback::ALIGNING_AT_MOVABLE_TABLE_1200},
+             {TableID::MOVABLE_TABLE_1500,
+              tsuten_msgs::PerformFeedback::ALIGNING_AT_MOVABLE_TABLE_1500},
+             {TableID::MOVABLE_TABLE_1800,
+              tsuten_msgs::PerformFeedback::ALIGNING_AT_MOVABLE_TABLE_1800}}},
+           {PerformPhase::SHOOT,
+            {{TableID::DUAL_TABLE_LOWER,
+              tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER},
+             {TableID::DUAL_TABLE_UPPER,
+              tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER},
+             {TableID::MOVABLE_TABLE_1200,
+              tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200},
+             {TableID::MOVABLE_TABLE_1500,
+              tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500},
+             {TableID::MOVABLE_TABLE_1800,
+              tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800}}}};
+
+  const std::vector<TableID> BehaviorServer::PERFORM_SEQUENCE =
+      {TableID::DUAL_TABLE_LOWER,
+       TableID::DUAL_TABLE_UPPER,
+       TableID::MOVABLE_TABLE_1200,
+       TableID::MOVABLE_TABLE_1500,
+       TableID::MOVABLE_TABLE_1800};
 
   const tf2::Transform BehaviorServer::HOME_POSE(tf2::Quaternion::getIdentity(), {0, 0, 0});
 
   const std::unordered_map<ShooterID, double>
-      BehaviorServer::DEFAULT_SHOOTER_VALVE_ON_DURATIONS_ =
+      BehaviorServer::DEFAULT_SHOOTER_VALVE_ON_DURATIONS =
           {{ShooterID::DUAL_TABLE_LOWER, 0.5},
            {ShooterID::DUAL_TABLE_UPPER_L, 0.5},
            {ShooterID::DUAL_TABLE_UPPER_R, 0.5},
@@ -23,7 +74,7 @@ namespace tsuten_behavior
   BehaviorServer::BehaviorServer()
       : pnh_("~"),
         tf_listener_(tf_buffer_),
-        shooter_valve_on_durations_(DEFAULT_SHOOTER_VALVE_ON_DURATIONS_),
+        shooter_valve_on_durations_(DEFAULT_SHOOTER_VALVE_ON_DURATIONS),
         perform_action_server_(pnh_, "perform", false),
         reconfigure_server_(reconfigure_mutex_),
         is_goal_available_(false)
@@ -87,91 +138,62 @@ namespace tsuten_behavior
 
   void BehaviorServer::performThread()
   {
+    static const std::vector<std::array<TableID, 2>> MOVE_SKIP_TABLE_SEQUENCES =
+        {{TableID::DUAL_TABLE_LOWER, TableID::DUAL_TABLE_UPPER}};
+
     if (!navigation_handler_.isConnectedToMoveBaseActionServer())
     {
-      navigation_handler_.waitForMoveBaseActionServer(ros::Duration(0));
+      ROS_ERROR("move_base action server not connected");
+      return;
     }
 
     std::vector<uint8_t> goal_tables;
-    auto isDirectedToPerformAt = [&goal_tables](uint8_t table)
-    { return std::any_of(goal_tables.cbegin(), goal_tables.cend(),
-                         [table](const auto &goal_table)
-                         { return table == goal_table; }); };
-
     {
       boost::lock_guard<boost::mutex> lock(mutex_);
       goal_tables = perform_goal_->tables;
     }
+    auto shouldShootOn = [&goal_tables](TableID table)
+    { return std::any_of(goal_tables.cbegin(), goal_tables.cend(),
+                         [table](const uint8_t &goal_table)
+                         { return goal_table == TABLE_ID_TO_PERFORM_GOAL_TABLES.at(table); }); };
 
     ROS_INFO("Performance started");
 
-    if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
+    std::array<TableID, 2> table_sequence = {TableID::NONE, TableID::NONE};
+    for (const auto &table : PERFORM_SEQUENCE)
     {
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
-      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
-      navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
-          .waitForNavigationToComplete();
-      moveUntilBumperIsPressed();
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER);
-      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
-      shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
-      boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
-      shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle().waitUntilShootCompletes();
-    }
-
-    if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER))
-    {
-      if (!isDirectedToPerformAt(tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER))
+      if (shouldShootOn(table))
       {
-        publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE);
-        tape_led_controller_.setColor(TapeLEDColor::YELLOW);
-        navigation_handler_.startNavigation(getGoal(TableID::DUAL_TABLE))
-            .waitForNavigationToComplete();
+        table_sequence = {table_sequence.at(1), table};
+        if (std::none_of(MOVE_SKIP_TABLE_SEQUENCES.cbegin(), MOVE_SKIP_TABLE_SEQUENCES.cend(),
+                         [&table_sequence](const std::array<TableID, 2> &move_skip_table_sequence)
+                         { return std::is_permutation(table_sequence.cbegin(),
+                                                      table_sequence.cend(),
+                                                      move_skip_table_sequence.cbegin()); }))
+        {
+          publishPerformFeedback(PerformPhase::MOVE, table);
+          tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::STEADY);
+          navigation_handler_.startNavigation(getGoal(table))
+              .waitForNavigationToComplete();
+        }
+
+        publishPerformFeedback(PerformPhase::ALIGN, table);
+        tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::BLINK);
+        alignAtTable(table);
+
+        publishPerformFeedback(PerformPhase::SHOOT, table);
+        tape_led_controller_.setColor(TapeLEDColor::WHITE, TapeLEDState::BLINK);
+        if (table == TableID::DUAL_TABLE_UPPER)
+        {
+          shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
+          boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
+        }
+        shooters_.at(TABLE_ID_TO_SHOOTER_ID.at(table)).shootBottle().waitUntilShootCompletes();
       }
-      moveUntilBumperIsPressed();
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER);
-      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
-      shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle().waitUntilShootCompletes();
     }
 
-    if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200))
-    {
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1200);
-      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
-      navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1200))
-          .waitForNavigationToComplete();
-      moveUntilBumperIsPressed();
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200);
-      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
-      shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle().waitUntilShootCompletes();
-    }
-
-    if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500))
-    {
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1500);
-      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
-      navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1500))
-          .waitForNavigationToComplete();
-      moveUntilBumperIsPressed();
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500);
-      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
-      shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle().waitUntilShootCompletes();
-    }
-
-    if (isDirectedToPerformAt(tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800))
-    {
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800);
-      tape_led_controller_.setColor(TapeLEDColor::YELLOW);
-      navigation_handler_.startNavigation(getGoal(TableID::MOVABLE_TABLE_1800))
-          .waitForNavigationToComplete();
-      moveUntilBumperIsPressed();
-      publishPerformFeedback(tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800);
-      tape_led_controller_.setColor(TapeLEDColor::WHITE, true);
-      shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle().waitUntilShootCompletes();
-    }
-
-    publishPerformFeedback(tsuten_msgs::PerformFeedback::MOVING_TO_HOME);
-    tape_led_controller_.setColor(TapeLEDColor::YELLOW);
+    publishPerformFeedback(PerformPhase::RETURN, TableID::NONE);
+    tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::STEADY);
     navigation_handler_.startNavigation(
                            tf2::Stamped<tf2::Transform>(HOME_POSE,
                                                         ros::Time::now(), global_frame_))
@@ -202,13 +224,15 @@ namespace tsuten_behavior
     }
   }
 
-  void BehaviorServer::publishPerformFeedback(uint8_t status)
+  void BehaviorServer::publishPerformFeedback(const PerformPhase &phase, const TableID &table_id)
   {
     tsuten_msgs::PerformFeedback feedback;
-    feedback.status = status;
+    feedback.status =
+        (phase == PerformPhase::RETURN) ? tsuten_msgs::PerformFeedback::RETURNING
+                                        : PERFORM_FEEDBACK_STATUS.at(phase).at(table_id);
 
     perform_action_server_.publishFeedback(feedback);
-    ROS_INFO("Perform status: %s", PERFORM_STATUS_TEXTS.at(status).c_str());
+    ROS_INFO("Perform status: %s", PERFORM_STATUS_TEXTS.at(feedback.status).c_str());
   }
 
   void BehaviorServer::acceptPerformGoal()
@@ -247,18 +271,22 @@ namespace tsuten_behavior
 
     resetAllShooters();
 
-    tape_led_controller_.setColor(TapeLEDColor::RED);
+    tape_led_controller_.setColor(TapeLEDColor::RED, TapeLEDState::STEADY);
   }
 
   tf2::Stamped<tf2::Transform> BehaviorServer::getGoal(const TableID &table_id)
   {
+    const auto &table_base_id = TABLE_ID_TO_TABLE_BASE_ID.at(table_id);
+
     tf2::Transform table_tf;
     while (true)
     {
       try
       {
-        tf2::fromMsg(tf_buffer_.lookupTransform(global_frame_, TABLE_NAMES.at(table_id) + "_link",
-                                                ros::Time(0), ros::Duration(1.0))
+        tf2::fromMsg(tf_buffer_.lookupTransform(
+                                   global_frame_, TABLE_BASE_NAMES.at(table_base_id) + "_link",
+                                   ros::Time(0),
+                                   ros::Duration(1.0))
                          .transform,
                      table_tf);
         break;
@@ -271,19 +299,14 @@ namespace tsuten_behavior
 
     tf2::Transform goal_transform(
         tf2::Quaternion::getIdentity(),
-        {0, -(TABLE_SIZES.at(table_id).at(1) / 2 + goal_distance_from_table_), 0});
+        {0, -(TABLE_SIZES.at(table_base_id).at(1) / 2 + goal_distance_from_table_), 0});
 
     return tf2::Stamped<tf2::Transform>(
         table_tf * goal_transform, ros::Time::now(), global_frame_);
   }
 
-  void BehaviorServer::moveUntilBumperIsPressed()
+  void BehaviorServer::alignAtTable(const TableID &table_id)
   {
-    while (!sensor_states_.bumper_l || !sensor_states_.bumper_r)
-    {
-      navigation_handler_.commandVelocityToChassis({0, 0.5, 0});
-    }
-    navigation_handler_.stopChassis();
   }
 
   void BehaviorServer::initializeShooters()
