@@ -97,3 +97,4 @@ target_include_directories(table_manager
 target_link_libraries(table_manager
   ${catkin_LIBRARIES}
 )
+target_compile_features(table_manager PUBLIC cxx_std_17)
