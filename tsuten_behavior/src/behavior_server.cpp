@@ -88,7 +88,8 @@ namespace tsuten_behavior
         shooter_valve_on_durations_(DEFAULT_SHOOTER_VALVE_ON_DURATIONS),
         perform_action_server_(pnh_, "perform", false),
         reconfigure_server_(reconfigure_mutex_),
-        is_goal_available_(false)
+        is_goal_available_(false),
+        sensor_states_({false, false})
   {
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
