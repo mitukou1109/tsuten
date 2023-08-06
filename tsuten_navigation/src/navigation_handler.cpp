@@ -70,7 +70,7 @@ namespace tsuten_navigation
 
   NavigationHandler &NavigationHandler::stopChassis()
   {
-    return commandVelocityToChassis({0.0, 0.0, 0.0});
+    return commandVelocityToChassis({0.0, 0.0, 0.0}, {0.0, 0.0, 0.0});
   }
 
   bool NavigationHandler::isConnectedToMoveBaseActionServer()

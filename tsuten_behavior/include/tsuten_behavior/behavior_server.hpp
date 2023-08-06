@@ -32,6 +32,7 @@ namespace tsuten_behavior
       MOVE,
       ALIGN,
       SHOOT,
+      BACK,
       RETURN
     };
 
@@ -64,7 +65,18 @@ namespace tsuten_behavior
 
     tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
 
+    void initializeTableToGoalTFs();
+
+    void initializeTablePoleTFs();
+
     void alignAtTable(const TableID &table_id);
+
+    void backFromTable(const TableID &table_id);
+
+    bool getRobotBaseToTableGoalTF(const TableID &table_id,
+                                   tf2::Transform &robot_base_to_table_goal_tf);
+
+    bool getTableTF(const TableBaseID &table_base_id, tf2::Transform &table_tf);
 
     void initializeShooters();
 
@@ -75,6 +87,9 @@ namespace tsuten_behavior
     void updateReconfigurableParameters();
 
     void reconfigureParameters(tsuten_behavior::BehaviorServerConfig &config, uint32_t level);
+
+    void tablePoleCallback(const TableBaseID &table_base_id,
+                           const geometry_msgs::PointStamped::ConstPtr &table_pole);
 
     void sensorStatesCallback(const tsuten_msgs::SensorStates &sensor_states);
 
@@ -90,6 +105,8 @@ namespace tsuten_behavior
     dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
 
     bool is_goal_available_;
+
+    std::unordered_map<TableBaseID, ros::Subscriber> table_pole_subs_;
 
     ros::Subscriber sensor_states_sub_;
 
@@ -108,12 +125,20 @@ namespace tsuten_behavior
 
     tsuten_navigation::NavigationHandler navigation_handler_;
 
+    std::unordered_map<TableID, tf2::Transform> table_to_goal_tfs_;
+
+    std::unordered_map<TableBaseID, tf2::Transform> table_pole_tfs_;
+
     SensorStates sensor_states_;
 
     std::string global_frame_;
     std::string robot_base_frame_;
 
     double goal_distance_from_table_;
+
+    double aligning_p_gain_x_;
+    double aligning_p_gain_y_;
+    double aligning_p_gain_yaw_;
 
     boost::mutex mutex_;
 

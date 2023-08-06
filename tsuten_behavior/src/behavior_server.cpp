@@ -51,7 +51,18 @@ namespace tsuten_behavior
              {TableID::MOVABLE_TABLE_1500,
               tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500},
              {TableID::MOVABLE_TABLE_1800,
-              tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800}}}};
+              tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800}}},
+           {PerformPhase::BACK,
+            {{TableID::DUAL_TABLE_LOWER,
+              tsuten_msgs::PerformFeedback::BACKING_FROM_DUAL_TABLE_LOWER},
+             {TableID::DUAL_TABLE_UPPER,
+              tsuten_msgs::PerformFeedback::BACKING_FROM_DUAL_TABLE_UPPER},
+             {TableID::MOVABLE_TABLE_1200,
+              tsuten_msgs::PerformFeedback::BACKING_FROM_MOVABLE_TABLE_1200},
+             {TableID::MOVABLE_TABLE_1500,
+              tsuten_msgs::PerformFeedback::BACKING_FROM_MOVABLE_TABLE_1500},
+             {TableID::MOVABLE_TABLE_1800,
+              tsuten_msgs::PerformFeedback::BACKING_FROM_MOVABLE_TABLE_1800}}}};
 
   const std::vector<TableID> BehaviorServer::PERFORM_SEQUENCE =
       {TableID::DUAL_TABLE_LOWER,
@@ -82,9 +93,29 @@ namespace tsuten_behavior
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
     pnh_.param("goal_distance_from_table", goal_distance_from_table_, 0.6);
+    pnh_.param("aligning_p_gain_x", aligning_p_gain_x_, 1.0);
+    pnh_.param("aligning_p_gain_y", aligning_p_gain_y_, 1.0);
+    pnh_.param("aligning_p_gain_yaw", aligning_p_gain_yaw_, 3.0);
 
     ros::NodeHandle nh;
+    for (const auto &table_base_name_pair : TABLE_BASE_NAMES)
+    {
+      auto &table_base_id = table_base_name_pair.first;
+      auto &table_base_name = table_base_name_pair.second;
+      table_pole_subs_.insert({table_base_id,
+                               nh.subscribe<geometry_msgs::PointStamped>(
+                                   table_base_name + "/table_pole",
+                                   10,
+                                   boost::bind(&BehaviorServer::tablePoleCallback,
+                                               this,
+                                               table_base_id,
+                                               _1))});
+    }
     sensor_states_sub_ = nh.subscribe("sensor_states", 10, &BehaviorServer::sensorStatesCallback, this);
+
+    initializeTableToGoalTFs();
+
+    initializeTablePoleTFs();
 
     initializeShooters();
 
@@ -189,6 +220,10 @@ namespace tsuten_behavior
           boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
         }
         shooters_.at(TABLE_ID_TO_SHOOTER_ID.at(table)).shootBottle().waitUntilShootCompletes();
+
+        publishPerformFeedback(PerformPhase::BACK, table);
+        tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::BLINK);
+        backFromTable(table);
       }
     }
 
@@ -276,37 +311,144 @@ namespace tsuten_behavior
 
   tf2::Stamped<tf2::Transform> BehaviorServer::getGoal(const TableID &table_id)
   {
-    const auto &table_base_id = TABLE_ID_TO_TABLE_BASE_ID.at(table_id);
-
-    tf2::Transform table_tf;
-    while (true)
-    {
-      try
-      {
-        tf2::fromMsg(tf_buffer_.lookupTransform(
-                                   global_frame_, TABLE_BASE_NAMES.at(table_base_id) + "_link",
-                                   ros::Time(0),
-                                   ros::Duration(1.0))
-                         .transform,
-                     table_tf);
-        break;
-      }
-      catch (const tf2::TransformException &exception)
-      {
-        ROS_ERROR("%s", exception.what());
-      }
-    }
-
-    tf2::Transform goal_transform(
-        tf2::Quaternion::getIdentity(),
-        {0, -(TABLE_SIZES.at(table_base_id).at(1) / 2 + goal_distance_from_table_), 0});
-
     return tf2::Stamped<tf2::Transform>(
-        table_tf * goal_transform, ros::Time::now(), global_frame_);
+        table_pole_tfs_.at(TABLE_ID_TO_TABLE_BASE_ID.at(table_id)) *
+            table_to_goal_tfs_.at(table_id),
+        ros::Time::now(), global_frame_);
+  }
+
+  void BehaviorServer::initializeTableToGoalTFs()
+  {
+    for (const auto &table_id_to_table_base_id_pair : TABLE_ID_TO_TABLE_BASE_ID)
+    {
+      auto &table_id = table_id_to_table_base_id_pair.first;
+      auto &table_base_id = table_id_to_table_base_id_pair.second;
+
+      table_to_goal_tfs_.insert(
+          {table_id,
+           tf2::Transform(
+               tf2::Quaternion::getIdentity(),
+               {0, -(TABLE_SIZES.at(table_base_id).at(1) / 2 + goal_distance_from_table_), 0})});
+    }
+  }
+
+  void BehaviorServer::initializeTablePoleTFs()
+  {
+    for (const auto &table_base_name_pair : TABLE_BASE_NAMES)
+    {
+      auto &table_base_id = table_base_name_pair.first;
+      auto &table_base_name = table_base_name_pair.second;
+
+      tf2::Transform table_tf;
+      while (!getTableTF(table_base_id, table_tf))
+      {
+        ;
+      }
+
+      table_pole_tfs_.insert({table_base_id, table_tf});
+    }
   }
 
   void BehaviorServer::alignAtTable(const TableID &table_id)
   {
+    static const tf2::Vector3 VEL_APPROACH = {0, 0.1, 0};
+
+    while (!sensor_states_.bumper_l || !sensor_states_.bumper_r)
+    {
+      tf2::Transform robot_base_to_table_goal_tf;
+      while (!getRobotBaseToTableGoalTF(table_id, robot_base_to_table_goal_tf))
+      {
+        ;
+      }
+
+      auto linear_error = robot_base_to_table_goal_tf.getOrigin();
+      auto yaw_error = tf2::getYaw(robot_base_to_table_goal_tf.getRotation());
+
+      navigation_handler_.commandVelocityToChassis(
+          (linear_error * tf2::Vector3(aligning_p_gain_x_, 0, 0) + VEL_APPROACH)
+              .rotate({0, 0, 1}, yaw_error),
+          tf2::Vector3(0, 0, yaw_error) * tf2::Vector3(0, 0, aligning_p_gain_yaw_));
+    }
+
+    navigation_handler_.stopChassis();
+  }
+
+  void BehaviorServer::backFromTable(const TableID &table_id)
+  {
+    static const double LINEAR_ERROR_TOLERANCE = 0.1;
+    static const double YAW_ERROR_TOLERANCE = 0.2;
+
+    while (true)
+    {
+      tf2::Transform robot_base_to_table_goal_tf;
+      while (!getRobotBaseToTableGoalTF(table_id, robot_base_to_table_goal_tf))
+      {
+        ;
+      }
+
+      auto linear_error = robot_base_to_table_goal_tf.getOrigin();
+      auto yaw_error = tf2::getYaw(robot_base_to_table_goal_tf.getRotation());
+
+      if (linear_error.length() < LINEAR_ERROR_TOLERANCE &&
+          std::abs(yaw_error) < YAW_ERROR_TOLERANCE)
+      {
+        break;
+      }
+      else
+      {
+        navigation_handler_.commandVelocityToChassis(
+            (linear_error * tf2::Vector3(aligning_p_gain_x_, aligning_p_gain_y_, 0))
+                .rotate({0, 0, 1}, yaw_error),
+            tf2::Vector3(0, 0, yaw_error) * tf2::Vector3(0, 0, aligning_p_gain_yaw_));
+      }
+    }
+
+    navigation_handler_.stopChassis();
+  }
+
+  bool BehaviorServer::getRobotBaseToTableGoalTF(const TableID &table_id,
+                                                 tf2::Transform &robot_base_to_table_goal_tf)
+  {
+    auto table_goal_tf = getGoal(table_id);
+
+    tf2::Transform robot_base_tf;
+    try
+    {
+      tf2::fromMsg(
+          tf_buffer_.lookupTransform(global_frame_, robot_base_frame_,
+                                     ros::Time(0), ros::Duration(1.0))
+              .transform,
+          robot_base_tf);
+    }
+    catch (const tf2::TransformException &exception)
+    {
+      ROS_ERROR("%s", exception.what());
+      return false;
+    }
+
+    robot_base_to_table_goal_tf = robot_base_tf.inverse() * table_goal_tf;
+
+    return true;
+  }
+
+  bool BehaviorServer::getTableTF(const TableBaseID &table_id, tf2::Transform &table_tf)
+  {
+    try
+    {
+      tf2::fromMsg(
+          tf_buffer_.lookupTransform(global_frame_, TABLE_BASE_NAMES.at(table_id) + "_link",
+                                     ros::Time(0), ros::Duration(1.0))
+              .transform,
+          table_tf);
+
+      return true;
+    }
+    catch (const tf2::TransformException &exception)
+    {
+      ROS_ERROR("%s", exception.what());
+
+      return false;
+    }
   }
 
   void BehaviorServer::initializeShooters()
@@ -423,6 +565,9 @@ namespace tsuten_behavior
   {
     BehaviorServerConfig config;
     config.goal_distance_from_table = goal_distance_from_table_;
+    config.aligning_p_gain_x = aligning_p_gain_x_;
+    config.aligning_p_gain_y = aligning_p_gain_y_;
+    config.aligning_p_gain_yaw = aligning_p_gain_yaw_;
     {
       boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
       reconfigure_server_.updateConfig(config);
@@ -433,6 +578,25 @@ namespace tsuten_behavior
       tsuten_behavior::BehaviorServerConfig &config, uint32_t level)
   {
     goal_distance_from_table_ = config.goal_distance_from_table;
+    aligning_p_gain_x_ = config.aligning_p_gain_x;
+    aligning_p_gain_y_ = config.aligning_p_gain_y;
+    aligning_p_gain_yaw_ = config.aligning_p_gain_yaw;
+
+    for (auto &table_to_goal_tf_pair : table_to_goal_tfs_)
+    {
+      auto &table_id = table_to_goal_tf_pair.first;
+      auto &table_to_goal_tf = table_to_goal_tf_pair.second;
+
+      table_to_goal_tf.getOrigin()
+          .setY(-(TABLE_SIZES.at(TABLE_ID_TO_TABLE_BASE_ID.at(table_id)).at(1) / 2 +
+                  goal_distance_from_table_));
+    }
+  }
+
+  void BehaviorServer::tablePoleCallback(const TableBaseID &table_base_id,
+                                         const geometry_msgs::PointStamped::ConstPtr &table_pole)
+  {
+    tf2::fromMsg(table_pole->point, table_pole_tfs_.at(table_base_id).getOrigin());
   }
 
   void BehaviorServer::sensorStatesCallback(const tsuten_msgs::SensorStates &sensor_states)

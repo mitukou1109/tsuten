@@ -20,9 +20,8 @@ namespace tsuten_navigation
 
     NavigationHandler &waitForNavigationToComplete();
 
-    NavigationHandler &commandVelocityToChassis(
-        const tf2::Vector3 &cmd_vel_linear,
-        const tf2::Vector3 &cmd_vel_angular = {0.0, 0.0, 0.0});
+    NavigationHandler &commandVelocityToChassis(const tf2::Vector3 &cmd_vel_linear,
+                                                const tf2::Vector3 &cmd_vel_angular);
 
     NavigationHandler &stopChassis();
 
