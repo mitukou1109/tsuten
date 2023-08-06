@@ -27,7 +27,7 @@ namespace tsuten_behavior
     TableManager() : pnh_("~"),
                      tf_listener_(tf_buffer_),
                      reconfigure_server_(reconfigure_mutex_),
-                     table_tfs_(DEFAULT_TABLE_TFS)
+                     table_positions_(DEFAULT_TABLE_POSITIONS)
     {
       pnh_.param("global_frame", global_frame_, std::string("map"));
       pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
@@ -61,7 +61,7 @@ namespace tsuten_behavior
     }
 
   private:
-    static const std::unordered_map<TableBaseID, tf2::Transform> DEFAULT_TABLE_TFS;
+    static const std::unordered_map<TableBaseID, tf2::Vector3> DEFAULT_TABLE_POSITIONS;
 
     void initializeTableTFs()
     {
@@ -85,10 +85,9 @@ namespace tsuten_behavior
               auto &table_base_id = (*table_base_name_pair_itr).first;
               try
               {
-                table_tfs_.at(table_base_id)
-                    .setOrigin({static_cast<double>(table_position[0]),
-                                static_cast<double>(table_position[1]),
-                                0});
+                table_positions_.at(table_base_id) = {static_cast<double>(table_position[0]),
+                                                      static_cast<double>(table_position[1]),
+                                                      0};
               }
               catch (const XmlRpc::XmlRpcException &exception)
               {
@@ -123,16 +122,17 @@ namespace tsuten_behavior
       table_tf_msg.header.frame_id = global_frame_;
       table_tf_msg.header.stamp = ros::Time::now();
       table_tf_msg.child_frame_id = TABLE_BASE_NAMES.at(table_base_id) + "_link";
-      table_tf_msg.transform = tf2::toMsg(table_tfs_.at(table_base_id));
+      table_tf_msg.transform.translation = tf2::toMsg(table_positions_.at(table_base_id));
+      table_tf_msg.transform.rotation = tf2::toMsg(tf2::Quaternion::getIdentity());
 
       return table_tf_msg;
     }
 
     void publishTF(const ros::TimerEvent &event)
     {
-      for (auto &table_tf_pair : table_tfs_)
+      for (auto &table_position_pair : table_positions_)
       {
-        tf_broadcaster_.sendTransform(createTableTFMsg(table_tf_pair.first));
+        tf_broadcaster_.sendTransform(createTableTFMsg(table_position_pair.first));
       }
     }
 
@@ -226,12 +226,12 @@ namespace tsuten_behavior
                             tf2::Vector3(0, 0, 0)) /
             arc_center_samples.size();
 
-        for (auto &table_tf_pair : table_tfs_)
+        for (auto &table_position_pair : table_positions_)
         {
-          auto &table_base_id = table_tf_pair.first;
-          auto &table_center = table_tf_pair.second.getOrigin();
+          auto &table_base_id = table_position_pair.first;
+          auto &table_position = table_position_pair.second;
 
-          if ((arc_center_avg - table_center).length() < table_pole_error_tolerance)
+          if ((arc_center_avg - table_position).length() < table_pole_error_tolerance)
           {
             geometry_msgs::PointStamped table_pole_msg;
             table_pole_msg.header.frame_id = global_frame_;
@@ -248,15 +248,12 @@ namespace tsuten_behavior
     void updateReconfigurableParameters()
     {
       TableManagerConfig config;
-      config.movable_table_1200_position_y = table_tfs_.at(TableBaseID::MOVABLE_TABLE_1200)
-                                                 .getOrigin()
-                                                 .getY();
-      config.movable_table_1500_position_y = table_tfs_.at(TableBaseID::MOVABLE_TABLE_1500)
-                                                 .getOrigin()
-                                                 .getY();
-      config.movable_table_1800_position_y = table_tfs_.at(TableBaseID::MOVABLE_TABLE_1800)
-                                                 .getOrigin()
-                                                 .getY();
+      config.movable_table_1200_position_y =
+          table_positions_.at(TableBaseID::MOVABLE_TABLE_1200).getY();
+      config.movable_table_1500_position_y =
+          table_positions_.at(TableBaseID::MOVABLE_TABLE_1500).getY();
+      config.movable_table_1800_position_y =
+          table_positions_.at(TableBaseID::MOVABLE_TABLE_1800).getY();
       {
         boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
         reconfigure_server_.updateConfig(config);
@@ -265,14 +262,11 @@ namespace tsuten_behavior
 
     void reconfigureParameters(tsuten_behavior::TableManagerConfig &config, uint32_t level)
     {
-      table_tfs_.at(TableBaseID::MOVABLE_TABLE_1200)
-          .getOrigin()
+      table_positions_.at(TableBaseID::MOVABLE_TABLE_1200)
           .setY(config.movable_table_1200_position_y);
-      table_tfs_.at(TableBaseID::MOVABLE_TABLE_1500)
-          .getOrigin()
+      table_positions_.at(TableBaseID::MOVABLE_TABLE_1500)
           .setY(config.movable_table_1500_position_y);
-      table_tfs_.at(TableBaseID::MOVABLE_TABLE_1800)
-          .getOrigin()
+      table_positions_.at(TableBaseID::MOVABLE_TABLE_1800)
           .setY(config.movable_table_1800_position_y);
     }
 
@@ -295,7 +289,7 @@ namespace tsuten_behavior
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
 
-    std::unordered_map<TableBaseID, tf2::Transform> table_tfs_;
+    std::unordered_map<TableBaseID, tf2::Vector3> table_positions_;
 
     laser_geometry::LaserProjection laser_projector_;
 
@@ -309,15 +303,11 @@ namespace tsuten_behavior
     double table_pole_error_tolerance;
   };
 
-  const std::unordered_map<TableBaseID, tf2::Transform> TableManager::DEFAULT_TABLE_TFS =
-      {{TableBaseID::DUAL_TABLE, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                {2.5, 2.4, 0})},
-       {TableBaseID::MOVABLE_TABLE_1200, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                        {4.5, 1.9, 0})},
-       {TableBaseID::MOVABLE_TABLE_1500, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                        {4.5, 1.9, 0})},
-       {TableBaseID::MOVABLE_TABLE_1800, tf2::Transform(tf2::Quaternion::getIdentity(),
-                                                        {6.5, 1.9, 0})}};
+  const std::unordered_map<TableBaseID, tf2::Vector3> TableManager::DEFAULT_TABLE_POSITIONS =
+      {{TableBaseID::DUAL_TABLE, {2.5, 2.4, 0}},
+       {TableBaseID::MOVABLE_TABLE_1200, {4.5, 1.9, 0}},
+       {TableBaseID::MOVABLE_TABLE_1500, {5.5, 1.9, 0}},
+       {TableBaseID::MOVABLE_TABLE_1800, {6.5, 1.9, 0}}};
 } // namespace tsuten_behavior
 
 int main(int argc, char **argv)
