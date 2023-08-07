@@ -5,6 +5,8 @@ find_package(catkin REQUIRED
   COMPONENTS
     actionlib
     jsk_rviz_plugins
+    pcl_conversions
+    pcl_ros
     pluginlib
     roscpp
     rviz
@@ -25,10 +27,14 @@ find_package(Qt5 ${rviz_QT_VERSION} EXACT REQUIRED
 set(QT_LIBRARIES Qt5::Widgets)
 add_definitions(-DQT_NO_KEYWORDS)
 
+find_package(PCL 1.10 REQUIRED)
+
 catkin_package(
   CATKIN_DEPENDS
     actionlib
     jsk_rviz_plugins
+    pcl_conversions
+    pcl_ros
     pluginlib
     roscpp
     rviz
