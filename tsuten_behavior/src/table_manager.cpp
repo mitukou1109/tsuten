@@ -156,6 +156,10 @@ namespace tsuten_behavior
       sensor_msgs::PointCloud2 cloud_msg;
       laser_projector_.transformLaserScanToPointCloud(global_frame_, *lidar_scan,
                                                       cloud_msg, tf_buffer_);
+      if (cloud_msg.data.empty())
+      {
+        return;
+      }
 
       auto cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
       pcl::fromROSMsg(cloud_msg, *cloud);
