@@ -30,6 +30,15 @@ namespace tsuten_behavior
       auto &table_id = table_name_pair.first;
       auto &table_name = table_name_pair.second;
 
+      if (table_id == TableID::HOME ||
+          table_id == TableID::DUAL_TABLE_UPPER_F ||
+          table_id == TableID::DUAL_TABLE_UPPER_R ||
+          table_id == TableID::DUAL_TABLE_UPPER_B ||
+          table_id == TableID::DUAL_TABLE_UPPER_L)
+      {
+        continue;
+      }
+
       QCheckBox *table_check_box = new QCheckBox;
       table_check_box->setStyleSheet(QString::fromStdString(
           "QCheckBox::indicator:checked {image: url(" +

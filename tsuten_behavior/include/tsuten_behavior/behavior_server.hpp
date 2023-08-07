@@ -32,8 +32,7 @@ namespace tsuten_behavior
       MOVE,
       ALIGN,
       SHOOT,
-      BACK,
-      RETURN
+      BACK
     };
 
     struct SensorStates
@@ -42,10 +41,12 @@ namespace tsuten_behavior
       bool bumper_r;
     };
 
-    static const std::unordered_map<PerformPhase, std::unordered_map<TableID, uint8_t>>
-        PERFORM_FEEDBACK_STATUS;
-
     static const std::vector<TableID> PERFORM_SEQUENCE;
+
+    static const std::unordered_map<PerformPhase, uint8_t>
+        PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASES;
+
+    static const std::unordered_map<TableID, tf2::Quaternion> TABLE_POLE_TO_GOAL_QUATS;
 
     static const tf2::Transform HOME_POSE;
 
@@ -64,8 +65,6 @@ namespace tsuten_behavior
     void resetToInitialState();
 
     tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
-
-    void initializeTableToGoalTFs();
 
     void initializeTablePoleTFs();
 
@@ -124,8 +123,6 @@ namespace tsuten_behavior
     tsuten_msgs::PerformGoalConstPtr perform_goal_;
 
     tsuten_navigation::NavigationHandler navigation_handler_;
-
-    std::unordered_map<TableID, tf2::Transform> table_to_goal_tfs_;
 
     std::unordered_map<TableBaseID, tf2::Transform> table_pole_tfs_;
 

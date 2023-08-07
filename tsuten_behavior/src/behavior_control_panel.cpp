@@ -20,19 +20,6 @@ namespace tsuten_behavior
            {TableID::MOVABLE_TABLE_1800,
             tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1800}};
 
-  const std::unordered_map<TableID, uint8_t>
-      BehaviorControlPanel::TABLE_ID_TO_PERFORM_GOAL_TABLE_ID =
-          {{TableID::DUAL_TABLE_UPPER,
-            tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER},
-           {TableID::DUAL_TABLE_LOWER,
-            tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER},
-           {TableID::MOVABLE_TABLE_1200,
-            tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200},
-           {TableID::MOVABLE_TABLE_1500,
-            tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500},
-           {TableID::MOVABLE_TABLE_1800,
-            tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800}};
-
   BehaviorControlPanel::BehaviorControlPanel(QWidget *parent)
       : rviz::Panel(parent),
         behavior_server_nh_("behavior_server"),
@@ -105,7 +92,7 @@ namespace tsuten_behavior
 
       if (table_check_box->isChecked())
       {
-        tables.emplace_back(TABLE_ID_TO_PERFORM_GOAL_TABLE_ID.at(table_id));
+        tables.emplace_back(TABLE_ID_TO_PERFORM_GOAL_TABLES.at(table_id));
         tables_text += " " + TABLE_TEXTS.at(table_id) + ",";
       }
     }

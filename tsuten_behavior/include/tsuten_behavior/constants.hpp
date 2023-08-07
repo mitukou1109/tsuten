@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include <tsuten_msgs/PerformFeedback.h>
+#include <tsuten_msgs/PerformGoal.h>
 
 namespace tsuten_behavior
 {
@@ -28,8 +29,12 @@ namespace tsuten_behavior
 
   enum class TableID
   {
-    NONE,
+    HOME,
     DUAL_TABLE_UPPER,
+    DUAL_TABLE_UPPER_F,
+    DUAL_TABLE_UPPER_R,
+    DUAL_TABLE_UPPER_B,
+    DUAL_TABLE_UPPER_L,
     DUAL_TABLE_LOWER,
     MOVABLE_TABLE_1200,
     MOVABLE_TABLE_1500,
@@ -53,14 +58,20 @@ namespace tsuten_behavior
        {ShooterID::MOVABLE_TABLE_1800, "Movable Table (1800)"}};
 
   const std::unordered_map<TableID, ShooterID> TABLE_ID_TO_SHOOTER_ID =
-      {{TableID::DUAL_TABLE_UPPER, ShooterID::DUAL_TABLE_UPPER_R},
+      {{TableID::DUAL_TABLE_UPPER_F, ShooterID::DUAL_TABLE_UPPER_R},
+       {TableID::DUAL_TABLE_UPPER_R, ShooterID::DUAL_TABLE_UPPER_R},
+       {TableID::DUAL_TABLE_UPPER_B, ShooterID::DUAL_TABLE_UPPER_R},
+       {TableID::DUAL_TABLE_UPPER_L, ShooterID::DUAL_TABLE_UPPER_R},
        {TableID::DUAL_TABLE_LOWER, ShooterID::DUAL_TABLE_LOWER},
        {TableID::MOVABLE_TABLE_1200, ShooterID::MOVABLE_TABLE_1200},
        {TableID::MOVABLE_TABLE_1500, ShooterID::MOVABLE_TABLE_1500},
        {TableID::MOVABLE_TABLE_1800, ShooterID::MOVABLE_TABLE_1800}};
 
   const std::unordered_map<TableID, TableBaseID> TABLE_ID_TO_TABLE_BASE_ID =
-      {{TableID::DUAL_TABLE_UPPER, TableBaseID::DUAL_TABLE},
+      {{TableID::DUAL_TABLE_UPPER_F, TableBaseID::DUAL_TABLE},
+       {TableID::DUAL_TABLE_UPPER_R, TableBaseID::DUAL_TABLE},
+       {TableID::DUAL_TABLE_UPPER_B, TableBaseID::DUAL_TABLE},
+       {TableID::DUAL_TABLE_UPPER_L, TableBaseID::DUAL_TABLE},
        {TableID::DUAL_TABLE_LOWER, TableBaseID::DUAL_TABLE},
        {TableID::MOVABLE_TABLE_1200, TableBaseID::MOVABLE_TABLE_1200},
        {TableID::MOVABLE_TABLE_1500, TableBaseID::MOVABLE_TABLE_1500},
@@ -73,7 +84,12 @@ namespace tsuten_behavior
        {TableBaseID::MOVABLE_TABLE_1800, "movable_table_1800"}};
 
   const std::unordered_map<TableID, std::string> TABLE_NAMES =
-      {{TableID::DUAL_TABLE_UPPER, "dual_table_upper"},
+      {{TableID::HOME, "home"},
+       {TableID::DUAL_TABLE_UPPER, "dual_table_upper"},
+       {TableID::DUAL_TABLE_UPPER_F, "dual_table_upper_front"},
+       {TableID::DUAL_TABLE_UPPER_R, "dual_table_upper_right"},
+       {TableID::DUAL_TABLE_UPPER_B, "dual_table_upper_back"},
+       {TableID::DUAL_TABLE_UPPER_L, "dual_table_upper_left"},
        {TableID::DUAL_TABLE_LOWER, "dual_table_lower"},
        {TableID::MOVABLE_TABLE_1200, "movable_table_1200"},
        {TableID::MOVABLE_TABLE_1500, "movable_table_1500"},
@@ -85,52 +101,43 @@ namespace tsuten_behavior
        {TableBaseID::MOVABLE_TABLE_1500, {500e-3, 500e-3, 1500e-3}},
        {TableBaseID::MOVABLE_TABLE_1800, {500e-3, 500e-3, 1800e-3}}};
 
-  const std::map<TableID, std::string> TABLE_TEXTS =
-      {{TableID::DUAL_TABLE_UPPER, "Dual Table (Upper)"},
-       {TableID::DUAL_TABLE_LOWER, "Dual Table (Lower)"},
-       {TableID::MOVABLE_TABLE_1200, "Movable Table (1200)"},
-       {TableID::MOVABLE_TABLE_1500, "Movable Table (1500)"},
-       {TableID::MOVABLE_TABLE_1800, "Movable Table (1800)"}};
+  const std::unordered_map<TableID, std::string> TABLE_TEXTS =
+      {{TableID::HOME, "home"},
+       {TableID::DUAL_TABLE_UPPER, "dual table (upper)"},
+       {TableID::DUAL_TABLE_UPPER_F, "dual table (upper, front)"},
+       {TableID::DUAL_TABLE_UPPER_R, "dual table (upper, right)"},
+       {TableID::DUAL_TABLE_UPPER_B, "dual table (upper, back)"},
+       {TableID::DUAL_TABLE_UPPER_L, "dual table (upper, left)"},
+       {TableID::DUAL_TABLE_LOWER, "dual table (lower)"},
+       {TableID::MOVABLE_TABLE_1200, "movable table (1200)"},
+       {TableID::MOVABLE_TABLE_1500, "movable table (1500)"},
+       {TableID::MOVABLE_TABLE_1800, "movable table (1800)"}};
 
-  const std::unordered_map<uint8_t, std::string> PERFORM_STATUS_TEXTS =
-      {{tsuten_msgs::PerformFeedback::MOVING_TO_DUAL_TABLE,
-        "Moving to dual table"},
-       {tsuten_msgs::PerformFeedback::ALIGNING_AT_DUAL_TABLE_UPPER,
-        "Aligning at dual table (upper)"},
-       {tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_UPPER,
-        "Shooting on dual table (upper)"},
-       {tsuten_msgs::PerformFeedback::BACKING_FROM_DUAL_TABLE_UPPER,
-        "Backing from dual table (upper)"},
-       {tsuten_msgs::PerformFeedback::ALIGNING_AT_DUAL_TABLE_LOWER,
-        "Aligning at dual table (lower)"},
-       {tsuten_msgs::PerformFeedback::SHOOTING_ON_DUAL_TABLE_LOWER,
-        "Shooting on dual table (lower)"},
-       {tsuten_msgs::PerformFeedback::BACKING_FROM_DUAL_TABLE_LOWER,
-        "Backing from dual table (lower)"},
-       {tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1200,
-        "Moving to movable table (1200)"},
-       {tsuten_msgs::PerformFeedback::ALIGNING_AT_MOVABLE_TABLE_1200,
-        "Aligning at movable table (1200)"},
-       {tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1200,
-        "Shooting on movable table (1200)"},
-       {tsuten_msgs::PerformFeedback::BACKING_FROM_MOVABLE_TABLE_1200,
-        "Backing from movable table (1200)"},
-       {tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1500,
-        "Moving to movable table (1500)"},
-       {tsuten_msgs::PerformFeedback::ALIGNING_AT_MOVABLE_TABLE_1500,
-        "Aligning at movable table (1500)"},
-       {tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1500,
-        "Shooting on movable table (1500)"},
-       {tsuten_msgs::PerformFeedback::BACKING_FROM_MOVABLE_TABLE_1500,
-        "Backing from movable table (1500)"},
-       {tsuten_msgs::PerformFeedback::MOVING_TO_MOVABLE_TABLE_1800,
-        "Moving to movable table (1800)"},
-       {tsuten_msgs::PerformFeedback::ALIGNING_AT_MOVABLE_TABLE_1800,
-        "Aligning at movable table (1800)"},
-       {tsuten_msgs::PerformFeedback::SHOOTING_ON_MOVABLE_TABLE_1800,
-        "Shooting on movable table (1800)"},
-       {tsuten_msgs::PerformFeedback::BACKING_FROM_MOVABLE_TABLE_1800,
-        "Backing from movable table (1800)"},
-       {tsuten_msgs::PerformFeedback::RETURNING,
-        "Returning to home"}};
+  const std::unordered_map<uint8_t, std::string> PERFORM_FEEDBACK_PHASE_TEXTS =
+      {{tsuten_msgs::PerformFeedback::MOVE, "Moving to"},
+       {tsuten_msgs::PerformFeedback::ALIGN, "Aligning at"},
+       {tsuten_msgs::PerformFeedback::SHOOT, "Shooting on"},
+       {tsuten_msgs::PerformFeedback::BACK, "Backing from"}};
+
+  const std::unordered_map<TableID, uint8_t> TABLE_ID_TO_PERFORM_GOAL_TABLES =
+      {{TableID::DUAL_TABLE_UPPER, tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER_F},
+       {TableID::DUAL_TABLE_UPPER_F, tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER_F},
+       {TableID::DUAL_TABLE_UPPER_R, tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER_R},
+       {TableID::DUAL_TABLE_UPPER_B, tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER_B},
+       {TableID::DUAL_TABLE_UPPER_L, tsuten_msgs::PerformGoal::DUAL_TABLE_UPPER_L},
+       {TableID::DUAL_TABLE_LOWER, tsuten_msgs::PerformGoal::DUAL_TABLE_LOWER},
+       {TableID::MOVABLE_TABLE_1200, tsuten_msgs::PerformGoal::MOVABLE_TABLE_1200},
+       {TableID::MOVABLE_TABLE_1500, tsuten_msgs::PerformGoal::MOVABLE_TABLE_1500},
+       {TableID::MOVABLE_TABLE_1800, tsuten_msgs::PerformGoal::MOVABLE_TABLE_1800}};
+
+  const std::unordered_map<TableID, uint8_t> TABLE_ID_TO_PERFORM_FEEDBACK_TABLES =
+      {{TableID::HOME, tsuten_msgs::PerformFeedback::HOME},
+       {TableID::DUAL_TABLE_UPPER_F, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_F},
+       {TableID::DUAL_TABLE_UPPER_R, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_R},
+       {TableID::DUAL_TABLE_UPPER_B, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_B},
+       {TableID::DUAL_TABLE_UPPER_L, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_L},
+       {TableID::DUAL_TABLE_LOWER, tsuten_msgs::PerformFeedback::DUAL_TABLE_LOWER},
+       {TableID::MOVABLE_TABLE_1200, tsuten_msgs::PerformFeedback::MOVABLE_TABLE_1200},
+       {TableID::MOVABLE_TABLE_1500, tsuten_msgs::PerformFeedback::MOVABLE_TABLE_1500},
+       {TableID::MOVABLE_TABLE_1800, tsuten_msgs::PerformFeedback::MOVABLE_TABLE_1800}};
 }

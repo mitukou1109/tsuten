@@ -220,7 +220,16 @@ namespace tsuten_behavior
     {
       perform_feedback_text_.action = jsk_rviz_plugins::OverlayText::ADD;
       perform_feedback_text_.text =
-          "Perform status: " + PERFORM_STATUS_TEXTS.at(feedback.feedback.status);
+          "Perform status: " + PERFORM_FEEDBACK_PHASE_TEXTS.at(feedback.feedback.phase) + " " +
+          TABLE_TEXTS.at(
+              std::find_if(
+                  TABLE_ID_TO_PERFORM_FEEDBACK_TABLES.begin(),
+                  TABLE_ID_TO_PERFORM_FEEDBACK_TABLES.end(),
+                  [&feedback](const std::pair<TableID, uint8_t>
+                                  &table_id_to_perform_feedback_table_pair)
+                  { return table_id_to_perform_feedback_table_pair.second ==
+                           feedback.feedback.table; })
+                  ->first);
 
       perform_feedback_text_pub_.publish(perform_feedback_text_);
     }

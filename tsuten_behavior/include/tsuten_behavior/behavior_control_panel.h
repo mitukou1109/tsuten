@@ -37,9 +37,6 @@ namespace tsuten_behavior
     static const std::unordered_map<TableID, uint8_t>
         TABLE_ID_TO_SHOOT_ON_TABLE_REQUEST_TABLE_ID;
 
-    static const std::unordered_map<TableID, uint8_t>
-        TABLE_ID_TO_PERFORM_GOAL_TABLE_ID;
-
     ros::NodeHandle behavior_server_nh_;
 
     actionlib::SimpleActionClient<tsuten_msgs::PerformAction> perform_action_client_;
