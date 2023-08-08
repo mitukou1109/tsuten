@@ -39,7 +39,13 @@ namespace tsuten_behavior
       ROS_ERROR("perform action server timeout");
     }
 
-    auto widgets = ui_.getWidgets();
+    const auto &widgets = ui_.getWidgets();
+
+    connect(widgets.table_check_boxes.at(TableID::DUAL_TABLE_UPPER),
+            &QCheckBox::stateChanged, this,
+            [widgets]()
+            { widgets.dual_table_upper_combo_box_->setEnabled(
+                  widgets.table_check_boxes.at(TableID::DUAL_TABLE_UPPER)->isChecked()); });
 
     for (auto &shoot_bottle_button_pair : widgets.shoot_bottle_buttons)
     {
@@ -87,11 +93,17 @@ namespace tsuten_behavior
 
     for (auto &table_check_box_pair : ui_.getWidgets().table_check_boxes)
     {
-      const auto &table_id = table_check_box_pair.first;
+      auto table_id = table_check_box_pair.first;
       const auto &table_check_box = table_check_box_pair.second;
 
       if (table_check_box->isChecked())
       {
+        if (table_id == TableID::DUAL_TABLE_UPPER)
+        {
+          table_id = (*std::next(BehaviorControlPanelUI::DUAL_TABLE_UPPER_COMBO_BOX_ITEMS.cbegin(),
+                                 ui_.getWidgets().dual_table_upper_combo_box_->currentIndex()))
+                         .first;
+        }
         tables.emplace_back(TABLE_ID_TO_PERFORM_GOAL_TABLES.at(table_id));
         tables_text += " " + TABLE_TEXTS.at(table_id) + ",";
       }

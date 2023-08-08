@@ -2,19 +2,29 @@
 
 #include <ros/package.h>
 
+#include <QLabel>
+#include <QLineEdit>
 namespace tsuten_behavior
 {
-  const std::unordered_map<TableID, int> BehaviorControlPanelUI::TABLE_CHECK_BOX_LAYOUT_COLUMNS =
-      {{TableID::MOVABLE_TABLE_1200, 1},
-       {TableID::MOVABLE_TABLE_1500, 2},
-       {TableID::MOVABLE_TABLE_1800, 3}};
+  const std::map<TableID, std::string> BehaviorControlPanelUI::DUAL_TABLE_UPPER_COMBO_BOX_ITEMS =
+      {{TableID::DUAL_TABLE_UPPER_F, "Front"},
+       {TableID::DUAL_TABLE_UPPER_R, "Right"},
+       {TableID::DUAL_TABLE_UPPER_B, "Back"},
+       {TableID::DUAL_TABLE_UPPER_L, "Left"}};
 
-  const std::unordered_map<TableID, int> BehaviorControlPanelUI::SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS =
-      {{TableID::DUAL_TABLE_LOWER, 0},
-       {TableID::DUAL_TABLE_UPPER, 0},
-       {TableID::MOVABLE_TABLE_1200, 1},
-       {TableID::MOVABLE_TABLE_1500, 2},
-       {TableID::MOVABLE_TABLE_1800, 3}};
+  const std::unordered_map<TableID, int>
+      BehaviorControlPanelUI::MOVABLE_TABLE_CHECK_BOX_GRID_COLUMNS =
+          {{TableID::MOVABLE_TABLE_1200, 1},
+           {TableID::MOVABLE_TABLE_1500, 2},
+           {TableID::MOVABLE_TABLE_1800, 3}};
+
+  const std::unordered_map<TableID, int>
+      BehaviorControlPanelUI::SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS =
+          {{TableID::DUAL_TABLE_LOWER, 0},
+           {TableID::DUAL_TABLE_UPPER, 0},
+           {TableID::MOVABLE_TABLE_1200, 1},
+           {TableID::MOVABLE_TABLE_1500, 2},
+           {TableID::MOVABLE_TABLE_1800, 3}};
 
   BehaviorControlPanelUI::BehaviorControlPanelUI(QWidget *parent) : parent_(parent)
   {
@@ -68,14 +78,16 @@ namespace tsuten_behavior
 
       switch (table_id)
       {
-      case TableID::DUAL_TABLE_LOWER:
-        dual_table_layout->insertWidget(1, table_check_box);
-        break;
       case TableID::DUAL_TABLE_UPPER:
         dual_table_layout->insertWidget(0, table_check_box);
         break;
+      case TableID::DUAL_TABLE_LOWER:
+        dual_table_layout->insertWidget(-1, table_check_box);
+        break;
       default:
-        tables_layout->addWidget(table_check_box, 1, TABLE_CHECK_BOX_LAYOUT_COLUMNS.at(table_id),
+        tables_layout->addWidget(table_check_box,
+                                 1,
+                                 MOVABLE_TABLE_CHECK_BOX_GRID_COLUMNS.at(table_id),
                                  Qt::AlignCenter | Qt::AlignBottom);
         break;
       }
@@ -84,6 +96,17 @@ namespace tsuten_behavior
           shoot_bottle_button, (table_id == TableID::DUAL_TABLE_UPPER) ? 0 : 2,
           SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS.at(table_id), Qt::AlignCenter);
     }
+
+    widgets_.dual_table_upper_combo_box_ = new QComboBox;
+    for (const auto &dual_table_upper_combo_box_items_pair : DUAL_TABLE_UPPER_COMBO_BOX_ITEMS)
+    {
+      widgets_.dual_table_upper_combo_box_->addItem(
+          QString::fromStdString(dual_table_upper_combo_box_items_pair.second));
+    }
+    widgets_.dual_table_upper_combo_box_->setStyleSheet(
+        "QComboBox {padding: 2px 2px 2px 5px; margin-bottom: 10px;}");
+    widgets_.dual_table_upper_combo_box_->setEnabled(false);
+    dual_table_layout->insertWidget(0, widgets_.dual_table_upper_combo_box_);
 
     widgets_.reset_all_shooters_button = new QPushButton("Reset all shooters");
     tables_layout->addWidget(widgets_.reset_all_shooters_button, 0, 2, 1, 2, Qt::AlignCenter);

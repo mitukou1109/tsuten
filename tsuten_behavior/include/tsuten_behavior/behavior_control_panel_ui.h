@@ -5,6 +5,7 @@
 #endif
 
 #include <QCheckBox>
+#include <QComboBox>
 #include <QLayout>
 #include <QMessageBox>
 #include <QPushButton>
@@ -17,12 +18,15 @@ namespace tsuten_behavior
     struct Widgets
     {
       std::unordered_map<TableID, QCheckBox *> table_check_boxes;
+      QComboBox *dual_table_upper_combo_box_;
       std::unordered_map<TableID, QPushButton *> shoot_bottle_buttons;
       QPushButton *reset_all_shooters_button;
 
       QPushButton *start_performance_button;
       QPushButton *stop_performance_button;
     };
+
+    static const std::map<TableID, std::string> DUAL_TABLE_UPPER_COMBO_BOX_ITEMS;
 
     BehaviorControlPanelUI(QWidget *parent);
 
@@ -44,7 +48,7 @@ namespace tsuten_behavior
     const Widgets &getWidgets() { return widgets_; }
 
   private:
-    static const std::unordered_map<TableID, int> TABLE_CHECK_BOX_LAYOUT_COLUMNS;
+    static const std::unordered_map<TableID, int> MOVABLE_TABLE_CHECK_BOX_GRID_COLUMNS;
 
     static const std::unordered_map<TableID, int> SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS;
 
