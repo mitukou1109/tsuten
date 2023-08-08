@@ -3,11 +3,9 @@ Panels:
     Help Height: 70
     Name: Displays
     Property Tree Widget:
-      Expanded:
-        - /Global Options1
-        - /Status1
+      Expanded: ~
       Splitter Ratio: 0.5
-    Tree Height: 437
+    Tree Height: 812
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -55,6 +53,8 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
       Frame Timeout: 15
       Frames:
         All Enabled: false
@@ -64,42 +64,6 @@ Visualization Manager:
           Value: false
         dual_table_link:
           Value: true
-        lb_back_barrel_1_link:
-          Value: false
-        lb_back_barrel_2_link:
-          Value: false
-        lb_back_barrel_3_link:
-          Value: false
-        lb_back_barrel_4_link:
-          Value: false
-        lb_front_barrel_1_link:
-          Value: false
-        lb_front_barrel_2_link:
-          Value: false
-        lb_front_barrel_3_link:
-          Value: false
-        lb_front_barrel_4_link:
-          Value: false
-        lb_wheel_link:
-          Value: false
-        lf_back_barrel_1_link:
-          Value: false
-        lf_back_barrel_2_link:
-          Value: false
-        lf_back_barrel_3_link:
-          Value: false
-        lf_back_barrel_4_link:
-          Value: false
-        lf_front_barrel_1_link:
-          Value: false
-        lf_front_barrel_2_link:
-          Value: false
-        lf_front_barrel_3_link:
-          Value: false
-        lf_front_barrel_4_link:
-          Value: false
-        lf_wheel_link:
-          Value: false
         lidar_link:
           Value: false
         map:
@@ -112,48 +76,12 @@ Visualization Manager:
           Value: true
         odom:
           Value: true
-        rb_back_barrel_1_link:
-          Value: false
-        rb_back_barrel_2_link:
-          Value: false
-        rb_back_barrel_3_link:
-          Value: false
-        rb_back_barrel_4_link:
-          Value: false
-        rb_front_barrel_1_link:
-          Value: false
-        rb_front_barrel_2_link:
-          Value: false
-        rb_front_barrel_3_link:
-          Value: false
-        rb_front_barrel_4_link:
-          Value: false
-        rb_wheel_link:
-          Value: false
-        rf_back_barrel_1_link:
-          Value: false
-        rf_back_barrel_2_link:
-          Value: false
-        rf_back_barrel_3_link:
-          Value: false
-        rf_back_barrel_4_link:
-          Value: false
-        rf_front_barrel_1_link:
-          Value: false
-        rf_front_barrel_2_link:
-          Value: false
-        rf_front_barrel_3_link:
-          Value: false
-        rf_front_barrel_4_link:
-          Value: false
-        rf_wheel_link:
-          Value: false
       Marker Alpha: 1
       Marker Scale: 1
       Name: TF
       Show Arrows: false
       Show Axes: true
-      Show Names: true
+      Show Names: false
       Tree:
         map:
           dual_table_link:
@@ -167,76 +95,8 @@ Visualization Manager:
           odom:
             base_link:
               body_link:
-                lb_wheel_link:
-                  lb_back_barrel_1_link:
-                    {}
-                  lb_back_barrel_2_link:
-                    {}
-                  lb_back_barrel_3_link:
-                    {}
-                  lb_back_barrel_4_link:
-                    {}
-                  lb_front_barrel_1_link:
-                    {}
-                  lb_front_barrel_2_link:
-                    {}
-                  lb_front_barrel_3_link:
-                    {}
-                  lb_front_barrel_4_link:
-                    {}
-                lf_wheel_link:
-                  lf_back_barrel_1_link:
-                    {}
-                  lf_back_barrel_2_link:
-                    {}
-                  lf_back_barrel_3_link:
-                    {}
-                  lf_back_barrel_4_link:
-                    {}
-                  lf_front_barrel_1_link:
-                    {}
-                  lf_front_barrel_2_link:
-                    {}
-                  lf_front_barrel_3_link:
-                    {}
-                  lf_front_barrel_4_link:
-                    {}
                 lidar_link:
                   {}
-                rb_wheel_link:
-                  rb_back_barrel_1_link:
-                    {}
-                  rb_back_barrel_2_link:
-                    {}
-                  rb_back_barrel_3_link:
-                    {}
-                  rb_back_barrel_4_link:
-                    {}
-                  rb_front_barrel_1_link:
-                    {}
-                  rb_front_barrel_2_link:
-                    {}
-                  rb_front_barrel_3_link:
-                    {}
-                  rb_front_barrel_4_link:
-                    {}
-                rf_wheel_link:
-                  rf_back_barrel_1_link:
-                    {}
-                  rf_back_barrel_2_link:
-                    {}
-                  rf_back_barrel_3_link:
-                    {}
-                  rf_back_barrel_4_link:
-                    {}
-                  rf_front_barrel_1_link:
-                    {}
-                  rf_front_barrel_2_link:
-                    {}
-                  rf_front_barrel_3_link:
-                    {}
-                  rf_front_barrel_4_link:
-                    {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -248,8 +108,8 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/LaserScan
-      Color: 255; 255; 255
-      Color Transformer: Intensity
+      Color: 0; 0; 255
+      Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
       Invert Rainbow: false
@@ -259,8 +119,8 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (Pixels): 5
+      Size (m): 0.019999999552965164
       Style: Flat Squares
       Topic: /lidar/scan
       Unreliable: false
@@ -280,12 +140,12 @@ Visualization Manager:
     - Alpha: 1
       Class: rviz/Polygon
       Color: 25; 255; 0
-      Enabled: true
+      Enabled: false
       Name: Footprint
       Queue Size: 10
       Topic: /move_base/global_costmap/footprint
       Unreliable: false
-      Value: true
+      Value: false
     - Alpha: 0.699999988079071
       Class: rviz/Map
       Color Scheme: costmap
@@ -300,12 +160,12 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: costmap
       Draw Behind: false
-      Enabled: true
+      Enabled: false
       Name: LocalCostmap
       Topic: /move_base/local_costmap/costmap
       Unreliable: false
       Use Timestamp: false
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -423,6 +283,66 @@ Visualization Manager:
       text size: 12
       top: 0
       width: 128
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /line_markers
+      Name: LineSegments
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /behavior_visualizer/table_center_marker
+      Name: CenterOfTable
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 204; 41; 204
+      Enabled: true
+      History Length: 1
+      Name: DualTablePole
+      Queue Size: 10
+      Radius: 0.019999999552965164
+      Topic: /table_pole/dual_table
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 204; 41; 204
+      Enabled: true
+      History Length: 1
+      Name: MovableTable1200Pole
+      Queue Size: 10
+      Radius: 0.019999999552965164
+      Topic: /table_pole/movable_table_1200
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 204; 41; 204
+      Enabled: true
+      History Length: 1
+      Name: MovableTable1500Pole
+      Queue Size: 10
+      Radius: 0.019999999552965164
+      Topic: /table_pole/movable_table_1500
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 204; 41; 204
+      Enabled: true
+      History Length: 1
+      Name: MovableTable1800Pole
+      Queue Size: 10
+      Radius: 0.019999999552965164
+      Topic: /table_pole/movable_table_1800
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -476,10 +396,10 @@ Window Geometry:
     collapsed: false
   Displays:
     collapsed: true
-  Height: 720
+  Height: 1095
   Hide Left Dock: true
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000015600000236fc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003b00000236000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000016400000236fc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003b000000ec000000a000fffffffb00000028004200650068006100760069006f00720043006f006e00740072006f006c00500061006e0065006c010000012d00000144000000ff00fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000004b00000003efc0100000002fb0000000800540069006d00650100000000000004b00000030700fffffffb0000000800540069006d00650100000000000004500000000000000000000003460000023600000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000040000000000000156000003adfc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073000000003b000003ad000000c700fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c000002610000000100000164000003adfc0200000004fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003b00000287000000a000fffffffb00000028004200650068006100760069006f00720043006f006e00740072006f006c00500061006e0065006c01000002c8000001200000012000fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007740000003efc0100000002fb0000000800540069006d00650100000000000007740000030700fffffffb0000000800540069006d006501000000000000045000000000000000000000060a000003ad00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -488,6 +408,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: false
-  Width: 1200
-  X: 45
-  Y: 31
+  Width: 1908
+  X: -32
+  Y: -32
