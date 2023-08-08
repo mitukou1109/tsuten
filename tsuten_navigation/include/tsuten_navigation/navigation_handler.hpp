@@ -29,6 +29,8 @@ namespace tsuten_navigation
 
     bool isNavigationInProgress();
 
+    bool hasNavigationSucceeded();
+
   private:
     actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> move_base_action_client_;
 

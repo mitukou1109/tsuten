@@ -82,4 +82,9 @@ namespace tsuten_navigation
   {
     return is_navigation_in_progress_;
   }
+
+  bool NavigationHandler::hasNavigationSucceeded()
+  {
+    return move_base_action_client_.getState() == actionlib::SimpleClientGoalState::SUCCEEDED;
+  }
 }

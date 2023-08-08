@@ -64,6 +64,8 @@ namespace tsuten_behavior
 
     void preemptPerformAction();
 
+    void abortPerformAction();
+
     void resetToInitialState();
 
     tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);

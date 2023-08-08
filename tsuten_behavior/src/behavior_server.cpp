@@ -196,6 +196,11 @@ namespace tsuten_behavior
         tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::STEADY);
         navigation_handler_.startNavigation(getGoal(table_id))
             .waitForNavigationToComplete();
+        if (!navigation_handler_.hasNavigationSucceeded())
+        {
+          abortPerformAction();
+          return;
+        }
 
         publishPerformFeedback(PerformPhase::ALIGN, table_id);
         tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::BLINK);
@@ -230,6 +235,11 @@ namespace tsuten_behavior
                            tf2::Stamped<tf2::Transform>(HOME_POSE,
                                                         ros::Time::now(), global_frame_))
         .waitForNavigationToComplete();
+    if (!navigation_handler_.hasNavigationSucceeded())
+    {
+      abortPerformAction();
+      return;
+    }
 
     ROS_INFO("Performance completed");
 
@@ -285,6 +295,13 @@ namespace tsuten_behavior
     perform_action_server_.setPreempted();
 
     ROS_INFO("Performance canceled");
+  }
+
+  void BehaviorServer::abortPerformAction()
+  {
+    perform_action_server_.setAborted();
+
+    ROS_INFO("Performance aborted");
   }
 
   void BehaviorServer::resetToInitialState()
