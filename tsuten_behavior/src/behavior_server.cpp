@@ -39,6 +39,14 @@ namespace tsuten_behavior
 
   const tf2::Transform BehaviorServer::HOME_POSE(tf2::Quaternion::getIdentity(), {0, 0, 0});
 
+  const std::unordered_map<uint8_t, ShooterID>
+      BehaviorServer::SHOOT_ON_TABLE_REQUEST_TO_SHOOTER_IDS =
+          {{tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_UPPER, ShooterID::DUAL_TABLE_UPPER_L},
+           {tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_LOWER, ShooterID::DUAL_TABLE_LOWER},
+           {tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1200, ShooterID::MOVABLE_TABLE_1200},
+           {tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1500, ShooterID::MOVABLE_TABLE_1500},
+           {tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1800, ShooterID::MOVABLE_TABLE_1800}};
+
   const std::unordered_map<ShooterID, double>
       BehaviorServer::DEFAULT_SHOOTER_VALVE_ON_DURATIONS =
           {{ShooterID::DUAL_TABLE_UPPER_L, 0.5},
@@ -59,6 +67,7 @@ namespace tsuten_behavior
   {
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
+    pnh_.param("dual_table_upper_r_shooter_delay", dual_table_upper_r_shooter_delay_, 0.5);
     pnh_.param("goal_distance_from_table", goal_distance_from_table_, 0.6);
     pnh_.param("aligning_p_gain_x", aligning_p_gain_x_, 1.0);
     pnh_.param("aligning_p_gain_y", aligning_p_gain_y_, 1.0);
@@ -201,7 +210,8 @@ namespace tsuten_behavior
           table_id == TableID::DUAL_TABLE_UPPER_L)
       {
         shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
-        boost::this_thread::sleep_for(boost::chrono::milliseconds(1000));
+        boost::this_thread::sleep_for(
+            boost::chrono::milliseconds(std::lround(dual_table_upper_r_shooter_delay_ * 1000)));
       }
       shooters_.at(TABLE_ID_TO_SHOOTER_ID.at(table_id)).shootBottle().waitUntilShootCompletes();
 
@@ -500,36 +510,16 @@ namespace tsuten_behavior
   {
     static ros::Timer dual_table_upper_shooter_timer_;
 
-    switch (req.table)
+    if (req.table == tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_UPPER)
     {
-    case tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_UPPER:
-      shooters_.at(ShooterID::DUAL_TABLE_UPPER_L).shootBottle();
       dual_table_upper_shooter_timer_ = pnh_.createTimer(
-          ros::Duration(1.0),
+          ros::Duration(dual_table_upper_r_shooter_delay_),
           [this](const ros::TimerEvent &)
           { shooters_.at(ShooterID::DUAL_TABLE_UPPER_R).shootBottle(); },
           true);
-      break;
-
-    case tsuten_msgs::ShootOnTableRequest::DUAL_TABLE_LOWER:
-      shooters_.at(ShooterID::DUAL_TABLE_LOWER).shootBottle();
-      break;
-
-    case tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1200:
-      shooters_.at(ShooterID::MOVABLE_TABLE_1200).shootBottle();
-      break;
-
-    case tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1500:
-      shooters_.at(ShooterID::MOVABLE_TABLE_1500).shootBottle();
-      break;
-
-    case tsuten_msgs::ShootOnTableRequest::MOVABLE_TABLE_1800:
-      shooters_.at(ShooterID::MOVABLE_TABLE_1800).shootBottle();
-      break;
-
-    default:
-      break;
     }
+
+    shooters_.at(SHOOT_ON_TABLE_REQUEST_TO_SHOOTER_IDS.at(req.table)).shootBottle();
 
     return true;
   }

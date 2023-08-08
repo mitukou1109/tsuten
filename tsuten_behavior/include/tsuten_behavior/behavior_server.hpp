@@ -50,6 +50,8 @@ namespace tsuten_behavior
 
     static const tf2::Transform HOME_POSE;
 
+    static const std::unordered_map<uint8_t, ShooterID> SHOOT_ON_TABLE_REQUEST_TO_SHOOTER_IDS;
+
     static const std::unordered_map<ShooterID, double> DEFAULT_SHOOTER_VALVE_ON_DURATIONS;
 
     void performThread();
@@ -130,6 +132,8 @@ namespace tsuten_behavior
 
     std::string global_frame_;
     std::string robot_base_frame_;
+
+    double dual_table_upper_r_shooter_delay_;
 
     double goal_distance_from_table_;
 
