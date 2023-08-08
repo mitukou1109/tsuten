@@ -215,7 +215,7 @@ namespace tsuten_behavior
       }
       shooters_.at(TABLE_ID_TO_SHOOTER_ID.at(table_id)).shootBottle().waitUntilShootCompletes();
 
-      if (table_id_itr != std::prev(goal_table_ids.cend()) &&
+      if (table_id_itr == std::prev(goal_table_ids.cend()) ||
           !shouldSkipMove({table_id, *std::next(table_id_itr)}))
       {
         publishPerformFeedback(PerformPhase::BACK, table_id);
