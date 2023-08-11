@@ -35,6 +35,19 @@ namespace tsuten_behavior
       BACK
     };
 
+    enum class PerformTarget
+    {
+      DUAL_TABLE_UPPER_F,
+      DUAL_TABLE_UPPER_R,
+      DUAL_TABLE_UPPER_B,
+      DUAL_TABLE_UPPER_L,
+      DUAL_TABLE_LOWER,
+      MOVABLE_TABLE_1200,
+      MOVABLE_TABLE_1500,
+      MOVABLE_TABLE_1800,
+      HOME
+    };
+
     struct SensorStates
     {
       bool bumper_l;
@@ -43,10 +56,19 @@ namespace tsuten_behavior
 
     static const std::vector<TableID> PERFORM_SEQUENCE;
 
-    static const std::unordered_map<PerformPhase, uint8_t>
-        PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASES;
+    static const std::vector<std::array<TableID, 2>> MOVE_SKIP_TABLE_SEQUENCES;
 
-    static const std::unordered_map<TableID, tf2::Quaternion> TABLE_POLE_TO_GOAL_QUATS;
+    static const std::unordered_map<PerformPhase, uint8_t>
+        PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASE;
+
+    static const std::unordered_map<PerformPhase, std::string> PERFORM_PHASE_TEXTS;
+
+    static const std::unordered_map<PerformTarget, TableID> PERFORM_TARGET_TO_TABLE_ID;
+
+    static const std::unordered_map<PerformTarget, GoalID> PERFORM_TARGET_TO_GOAL_ID;
+
+    static const std::unordered_map<PerformTarget, uint8_t>
+        PERFORM_TARGET_TO_PERFORM_FEEDBACK_TARGET;
 
     static const tf2::Transform HOME_POSE;
 
@@ -58,7 +80,7 @@ namespace tsuten_behavior
 
     void launchPerformThread();
 
-    void publishPerformFeedback(const PerformPhase &phase, const TableID &table_id);
+    void publishPerformFeedback(const PerformPhase &phase, const PerformTarget &target);
 
     void acceptPerformGoal();
 
@@ -68,22 +90,20 @@ namespace tsuten_behavior
 
     void resetToInitialState();
 
-    tf2::Stamped<tf2::Transform> getGoal(const TableID &table_id);
+    bool shouldSkipMovePerformPhase(const std::array<TableID, 2> &table_sequence);
 
-    void initializeTablePoleTFs();
+    tf2::Stamped<tf2::Transform> getGoal(const GoalID &goal_id);
 
-    void alignAtTable(const TableID &table_id);
+    void alignAtTable(const GoalID &goal_id);
 
-    void backFromTable(const TableID &table_id);
+    void backFromTable(const GoalID &goal_id);
 
-    bool getRobotBaseToTableGoalTF(const TableID &table_id,
-                                   tf2::Transform &robot_base_to_table_goal_tf);
-
-    bool getTableTF(const TableBaseID &table_base_id, tf2::Transform &table_tf);
+    tf2::Transform getRobotBaseToGoalTF(const GoalID &goal_id);
 
     void initializeShooters();
 
-    bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req, tsuten_msgs::ShootOnTableResponse &res);
+    bool shootOnTable(tsuten_msgs::ShootOnTableRequest &req,
+                      tsuten_msgs::ShootOnTableResponse &res);
 
     void resetAllShooters();
 
@@ -91,10 +111,9 @@ namespace tsuten_behavior
 
     void reconfigureParameters(tsuten_behavior::BehaviorServerConfig &config, uint32_t level);
 
-    void tablePoleCallback(const TableBaseID &table_base_id,
-                           const geometry_msgs::PointStamped::ConstPtr &table_pole);
-
     void sensorStatesCallback(const tsuten_msgs::SensorStates &sensor_states);
+
+    PerformTarget getPerformTargetByTableID(const TableID &table_id);
 
     ros::NodeHandle pnh_;
 
@@ -108,8 +127,6 @@ namespace tsuten_behavior
     dynamic_reconfigure::Server<tsuten_behavior::BehaviorServerConfig> reconfigure_server_;
 
     bool is_goal_available_;
-
-    std::unordered_map<TableBaseID, ros::Subscriber> table_pole_subs_;
 
     ros::Subscriber sensor_states_sub_;
 
@@ -128,8 +145,6 @@ namespace tsuten_behavior
 
     tsuten_navigation::NavigationHandler navigation_handler_;
 
-    std::unordered_map<TableBaseID, tf2::Transform> table_pole_tfs_;
-
     SensorStates sensor_states_;
 
     std::string global_frame_;
@@ -137,7 +152,7 @@ namespace tsuten_behavior
 
     double dual_table_upper_r_shooter_delay_;
 
-    double goal_distance_from_table_;
+    double table_approach_vel_;
 
     double aligning_p_gain_x_;
     double aligning_p_gain_y_;

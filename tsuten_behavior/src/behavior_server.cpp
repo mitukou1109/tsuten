@@ -20,22 +20,61 @@ namespace tsuten_behavior
        TableID::MOVABLE_TABLE_1500,
        TableID::MOVABLE_TABLE_1800};
 
+  const std::vector<std::array<TableID, 2>> BehaviorServer::MOVE_SKIP_TABLE_SEQUENCES =
+      {{TableID::DUAL_TABLE_UPPER_F, TableID::DUAL_TABLE_LOWER},
+       {TableID::DUAL_TABLE_UPPER_R, TableID::DUAL_TABLE_LOWER},
+       {TableID::DUAL_TABLE_UPPER_B, TableID::DUAL_TABLE_LOWER},
+       {TableID::DUAL_TABLE_UPPER_L, TableID::DUAL_TABLE_LOWER},
+       {TableID::DUAL_TABLE_LOWER, TableID::DUAL_TABLE_UPPER_F}};
+
   const std::unordered_map<BehaviorServer::PerformPhase, uint8_t>
-      BehaviorServer::PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASES =
+      BehaviorServer::PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASE =
           {{PerformPhase::MOVE, tsuten_msgs::PerformFeedback::MOVE},
            {PerformPhase::ALIGN, tsuten_msgs::PerformFeedback::ALIGN},
            {PerformPhase::SHOOT, tsuten_msgs::PerformFeedback::SHOOT},
            {PerformPhase::BACK, tsuten_msgs::PerformFeedback::BACK}};
 
-  const std::unordered_map<TableID, tf2::Quaternion> BehaviorServer::TABLE_POLE_TO_GOAL_QUATS =
-      {{TableID::DUAL_TABLE_UPPER_F, {{0, 0, 1}, 0}},
-       {TableID::DUAL_TABLE_UPPER_R, {{0, 0, 1}, M_PI_2}},
-       {TableID::DUAL_TABLE_UPPER_B, {{0, 0, 1}, M_PI}},
-       {TableID::DUAL_TABLE_UPPER_L, {{0, 0, 1}, -M_PI_2}},
-       {TableID::DUAL_TABLE_LOWER, {{0, 0, 1}, 0}},
-       {TableID::MOVABLE_TABLE_1200, {{0, 0, 1}, 0}},
-       {TableID::MOVABLE_TABLE_1500, {{0, 0, 1}, 0}},
-       {TableID::MOVABLE_TABLE_1800, {{0, 0, 1}, 0}}};
+  const std::unordered_map<BehaviorServer::PerformPhase, std::string>
+      BehaviorServer::PERFORM_PHASE_TEXTS =
+          {{PerformPhase::MOVE, "Moving to"},
+           {PerformPhase::ALIGN, "Aligning at"},
+           {PerformPhase::SHOOT, "Shooting on"},
+           {PerformPhase::BACK, "Backing from"}};
+
+  const std::unordered_map<BehaviorServer::PerformTarget, TableID>
+      BehaviorServer::PERFORM_TARGET_TO_TABLE_ID =
+          {{PerformTarget::DUAL_TABLE_UPPER_F, TableID::DUAL_TABLE_UPPER_F},
+           {PerformTarget::DUAL_TABLE_UPPER_R, TableID::DUAL_TABLE_UPPER_R},
+           {PerformTarget::DUAL_TABLE_UPPER_B, TableID::DUAL_TABLE_UPPER_B},
+           {PerformTarget::DUAL_TABLE_UPPER_L, TableID::DUAL_TABLE_UPPER_L},
+           {PerformTarget::DUAL_TABLE_LOWER, TableID::DUAL_TABLE_LOWER},
+           {PerformTarget::MOVABLE_TABLE_1200, TableID::MOVABLE_TABLE_1200},
+           {PerformTarget::MOVABLE_TABLE_1500, TableID::MOVABLE_TABLE_1500},
+           {PerformTarget::MOVABLE_TABLE_1800, TableID::MOVABLE_TABLE_1800}};
+
+  const std::unordered_map<BehaviorServer::PerformTarget, GoalID>
+      BehaviorServer::PERFORM_TARGET_TO_GOAL_ID =
+          {{PerformTarget::DUAL_TABLE_UPPER_F, GoalID::DUAL_TABLE_F},
+           {PerformTarget::DUAL_TABLE_UPPER_R, GoalID::DUAL_TABLE_R},
+           {PerformTarget::DUAL_TABLE_UPPER_B, GoalID::DUAL_TABLE_B},
+           {PerformTarget::DUAL_TABLE_UPPER_L, GoalID::DUAL_TABLE_L},
+           {PerformTarget::DUAL_TABLE_LOWER, GoalID::DUAL_TABLE_F},
+           {PerformTarget::MOVABLE_TABLE_1200, GoalID::MOVABLE_TABLE_1200},
+           {PerformTarget::MOVABLE_TABLE_1500, GoalID::MOVABLE_TABLE_1500},
+           {PerformTarget::MOVABLE_TABLE_1800, GoalID::MOVABLE_TABLE_1800},
+           {PerformTarget::HOME, GoalID::HOME}};
+
+  const std::unordered_map<BehaviorServer::PerformTarget, uint8_t>
+      BehaviorServer::PERFORM_TARGET_TO_PERFORM_FEEDBACK_TARGET =
+          {{PerformTarget::DUAL_TABLE_UPPER_F, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_F},
+           {PerformTarget::DUAL_TABLE_UPPER_R, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_R},
+           {PerformTarget::DUAL_TABLE_UPPER_B, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_B},
+           {PerformTarget::DUAL_TABLE_UPPER_L, tsuten_msgs::PerformFeedback::DUAL_TABLE_UPPER_L},
+           {PerformTarget::DUAL_TABLE_LOWER, tsuten_msgs::PerformFeedback::DUAL_TABLE_LOWER},
+           {PerformTarget::MOVABLE_TABLE_1200, tsuten_msgs::PerformFeedback::MOVABLE_TABLE_1200},
+           {PerformTarget::MOVABLE_TABLE_1500, tsuten_msgs::PerformFeedback::MOVABLE_TABLE_1500},
+           {PerformTarget::MOVABLE_TABLE_1800, tsuten_msgs::PerformFeedback::MOVABLE_TABLE_1800},
+           {PerformTarget::HOME, tsuten_msgs::PerformFeedback::HOME}};
 
   const tf2::Transform BehaviorServer::HOME_POSE(tf2::Quaternion::getIdentity(), {0, 0, 0});
 
@@ -68,28 +107,13 @@ namespace tsuten_behavior
     pnh_.param("global_frame", global_frame_, std::string("map"));
     pnh_.param("robot_base_frame", robot_base_frame_, std::string("base_link"));
     pnh_.param("dual_table_upper_r_shooter_delay", dual_table_upper_r_shooter_delay_, 0.5);
-    pnh_.param("goal_distance_from_table", goal_distance_from_table_, 0.6);
+    pnh_.param("table_approach_vel", table_approach_vel_, 0.1);
     pnh_.param("aligning_p_gain_x", aligning_p_gain_x_, 1.0);
     pnh_.param("aligning_p_gain_y", aligning_p_gain_y_, 1.0);
     pnh_.param("aligning_p_gain_yaw", aligning_p_gain_yaw_, 3.0);
 
     ros::NodeHandle nh;
-    for (const auto &table_base_name_pair : TABLE_BASE_NAMES)
-    {
-      auto &table_base_id = table_base_name_pair.first;
-      auto &table_base_name = table_base_name_pair.second;
-      table_pole_subs_.insert({table_base_id,
-                               nh.subscribe<geometry_msgs::PointStamped>(
-                                   table_base_name + "/table_pole",
-                                   10,
-                                   boost::bind(&BehaviorServer::tablePoleCallback,
-                                               this,
-                                               table_base_id,
-                                               _1))});
-    }
     sensor_states_sub_ = nh.subscribe("sensor_states", 10, &BehaviorServer::sensorStatesCallback, this);
-
-    initializeTablePoleTFs();
 
     initializeShooters();
 
@@ -143,18 +167,6 @@ namespace tsuten_behavior
 
   void BehaviorServer::performThread()
   {
-    static const std::vector<std::array<TableID, 2>> MOVE_SKIP_TABLE_SEQUENCES =
-        {{TableID::DUAL_TABLE_UPPER_F, TableID::DUAL_TABLE_LOWER},
-         {TableID::DUAL_TABLE_UPPER_R, TableID::DUAL_TABLE_LOWER},
-         {TableID::DUAL_TABLE_UPPER_B, TableID::DUAL_TABLE_LOWER},
-         {TableID::DUAL_TABLE_UPPER_L, TableID::DUAL_TABLE_LOWER},
-         {TableID::DUAL_TABLE_LOWER, TableID::DUAL_TABLE_UPPER_F}};
-
-    static auto shouldSkipMove = [](const std::array<TableID, 2> &table_sequence)
-    { return std::any_of(MOVE_SKIP_TABLE_SEQUENCES.cbegin(), MOVE_SKIP_TABLE_SEQUENCES.cend(),
-                         [&table_sequence](const std::array<TableID, 2> &move_skip_table_sequence)
-                         { return table_sequence == move_skip_table_sequence; }); };
-
     if (!navigation_handler_.isConnectedToMoveBaseActionServer())
     {
       ROS_ERROR("move_base action server not connected");
@@ -179,7 +191,7 @@ namespace tsuten_behavior
                  { return std::any_of(
                        perform_goal_tables.cbegin(), perform_goal_tables.cend(),
                        [table_id](const uint8_t &perform_goal_table)
-                       { return TABLE_ID_TO_PERFORM_GOAL_TABLES.at(table_id) ==
+                       { return TABLE_ID_TO_PERFORM_GOAL_TABLE.at(table_id) ==
                                 perform_goal_table; }); });
 
     ROS_INFO("Performance started");
@@ -187,14 +199,16 @@ namespace tsuten_behavior
     for (auto table_id_itr = goal_table_ids.cbegin();
          table_id_itr != goal_table_ids.cend(); table_id_itr++)
     {
-      const auto &table_id = *table_id_itr;
+      auto &table_id = *table_id_itr;
+      auto goal_id = TABLE_ID_TO_GOAL_ID.at(table_id);
+      const auto perform_target = getPerformTargetByTableID(table_id);
 
       if (table_id_itr != goal_table_ids.cend() &&
-          !shouldSkipMove({*std::prev(table_id_itr), table_id}))
+          !shouldSkipMovePerformPhase({*std::prev(table_id_itr), table_id}))
       {
-        publishPerformFeedback(PerformPhase::MOVE, table_id);
+        publishPerformFeedback(PerformPhase::MOVE, perform_target);
         tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::STEADY);
-        navigation_handler_.startNavigation(getGoal(table_id))
+        navigation_handler_.startNavigation(getGoal(goal_id))
             .waitForNavigationToComplete();
         if (!navigation_handler_.hasNavigationSucceeded())
         {
@@ -202,12 +216,16 @@ namespace tsuten_behavior
           return;
         }
 
-        publishPerformFeedback(PerformPhase::ALIGN, table_id);
+        publishPerformFeedback(PerformPhase::ALIGN, perform_target);
         tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::BLINK);
-        alignAtTable(table_id);
+        alignAtTable(goal_id);
+      }
+      else
+      {
+        goal_id = TABLE_ID_TO_GOAL_ID.at(*std::prev(table_id_itr));
       }
 
-      publishPerformFeedback(PerformPhase::SHOOT, table_id);
+      publishPerformFeedback(PerformPhase::SHOOT, perform_target);
       tape_led_controller_.setColor(TapeLEDColor::WHITE, TapeLEDState::BLINK);
       if (table_id == TableID::DUAL_TABLE_UPPER_F ||
           table_id == TableID::DUAL_TABLE_UPPER_R ||
@@ -221,15 +239,15 @@ namespace tsuten_behavior
       shooters_.at(TABLE_ID_TO_SHOOTER_ID.at(table_id)).shootBottle().waitUntilShootCompletes();
 
       if (table_id_itr == std::prev(goal_table_ids.cend()) ||
-          !shouldSkipMove({table_id, *std::next(table_id_itr)}))
+          !shouldSkipMovePerformPhase({table_id, *std::next(table_id_itr)}))
       {
-        publishPerformFeedback(PerformPhase::BACK, table_id);
+        publishPerformFeedback(PerformPhase::BACK, perform_target);
         tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::BLINK);
-        backFromTable(table_id);
+        backFromTable(goal_id);
       }
     }
 
-    publishPerformFeedback(PerformPhase::MOVE, TableID::HOME);
+    publishPerformFeedback(PerformPhase::MOVE, PerformTarget::HOME);
     tape_led_controller_.setColor(TapeLEDColor::YELLOW, TapeLEDState::STEADY);
     navigation_handler_.startNavigation(
                            tf2::Stamped<tf2::Transform>(HOME_POSE,
@@ -266,15 +284,33 @@ namespace tsuten_behavior
     }
   }
 
-  void BehaviorServer::publishPerformFeedback(const PerformPhase &phase, const TableID &table_id)
+  void BehaviorServer::publishPerformFeedback(
+      const PerformPhase &phase, const PerformTarget &target)
   {
     tsuten_msgs::PerformFeedback feedback;
-    feedback.phase = PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASES.at(phase);
-    feedback.table = TABLE_ID_TO_PERFORM_FEEDBACK_TABLES.at(table_id);
+    feedback.phase = PERFORM_PHASE_TO_PERFORM_FEEDBACK_PHASE.at(phase);
+    feedback.target = PERFORM_TARGET_TO_PERFORM_FEEDBACK_TARGET.at(target);
+
+    feedback.status =
+        "Perform status: " + PERFORM_PHASE_TEXTS.at(phase) + " ";
+    switch (phase)
+    {
+    case PerformPhase::MOVE:
+    case PerformPhase::ALIGN:
+    case PerformPhase::BACK:
+      feedback.status += GOAL_TEXTS.at(PERFORM_TARGET_TO_GOAL_ID.at(target));
+      break;
+
+    case PerformPhase::SHOOT:
+      feedback.status += TABLE_TEXTS.at(PERFORM_TARGET_TO_TABLE_ID.at(target));
+      break;
+
+    default:
+      break;
+    }
 
     perform_action_server_.publishFeedback(feedback);
-    ROS_INFO_STREAM("Perform status: " << PERFORM_FEEDBACK_PHASE_TEXTS.at(feedback.phase)
-                                       << " " << TABLE_TEXTS.at(table_id));
+    ROS_INFO_STREAM(feedback.status);
   }
 
   void BehaviorServer::acceptPerformGoal()
@@ -323,57 +359,48 @@ namespace tsuten_behavior
     tape_led_controller_.setColor(TapeLEDColor::RED, TapeLEDState::STEADY);
   }
 
-  tf2::Stamped<tf2::Transform> BehaviorServer::getGoal(const TableID &table_id)
+  bool BehaviorServer::shouldSkipMovePerformPhase(const std::array<TableID, 2> &table_sequence)
   {
-    const auto &table_base_id = TABLE_ID_TO_TABLE_BASE_ID.at(table_id);
-    const auto &table_pole_to_goal_quat = TABLE_POLE_TO_GOAL_QUATS.at(table_id);
-    tf2::Vector3 table_size(TABLE_SIZES.at(table_base_id).at(0),
-                            TABLE_SIZES.at(table_base_id).at(1),
-                            TABLE_SIZES.at(table_base_id).at(2));
-
-    auto goal_tf =
-        table_pole_tfs_.at(table_base_id) *
-        tf2::Transform(table_pole_to_goal_quat,
-                       tf2::quatRotate(table_pole_to_goal_quat, {0, 1, 0}) *
-                           -(table_size + goal_distance_from_table_ * tf2::Vector3(1, 1, 1)));
-
-    return tf2::Stamped<tf2::Transform>(goal_tf, ros::Time::now(), global_frame_);
+    return std::any_of(MOVE_SKIP_TABLE_SEQUENCES.cbegin(), MOVE_SKIP_TABLE_SEQUENCES.cend(),
+                       [&table_sequence](const std::array<TableID, 2> &move_skip_table_sequence)
+                       { return table_sequence == move_skip_table_sequence; });
   }
 
-  void BehaviorServer::initializeTablePoleTFs()
+  tf2::Stamped<tf2::Transform> BehaviorServer::getGoal(const GoalID &goal_id)
   {
-    for (const auto &table_base_name_pair : TABLE_BASE_NAMES)
+    tf2::Stamped<tf2::Transform> goal;
+    while (true)
     {
-      auto &table_base_id = table_base_name_pair.first;
-      auto &table_base_name = table_base_name_pair.second;
-
-      tf2::Transform table_tf;
-      while (!getTableTF(table_base_id, table_tf))
+      try
       {
-        ;
+        tf2::fromMsg(
+            tf_buffer_.lookupTransform(global_frame_, GOAL_NAMES.at(goal_id) + "_goal",
+                                       ros::Time(0), ros::Duration(0.5)),
+            goal);
+        break;
       }
-
-      table_pole_tfs_.insert({table_base_id, table_tf});
+      catch (const tf2::TransformException &exception)
+      {
+        ROS_ERROR("%s", exception.what());
+        continue;
+      }
     }
+
+    return goal;
   }
 
-  void BehaviorServer::alignAtTable(const TableID &table_id)
+  void BehaviorServer::alignAtTable(const GoalID &goal_id)
   {
-    static const tf2::Vector3 VEL_APPROACH = {0, 0.05, 0};
-
     while (!sensor_states_.bumper_l || !sensor_states_.bumper_r)
     {
-      tf2::Transform robot_base_to_table_goal_tf;
-      while (!getRobotBaseToTableGoalTF(table_id, robot_base_to_table_goal_tf))
-      {
-        ;
-      }
+      auto robot_base_to_table_goal_tf = getRobotBaseToGoalTF(goal_id);
 
       auto linear_error = robot_base_to_table_goal_tf.getOrigin();
       auto yaw_error = tf2::getYaw(robot_base_to_table_goal_tf.getRotation());
 
       navigation_handler_.commandVelocityToChassis(
-          (linear_error * tf2::Vector3(aligning_p_gain_x_, 0, 0) + VEL_APPROACH)
+          (linear_error * tf2::Vector3(aligning_p_gain_x_, 0, 0) +
+           tf2::Vector3(0, table_approach_vel_, 0))
               .rotate({0, 0, 1}, yaw_error),
           tf2::Vector3(0, 0, yaw_error) * tf2::Vector3(0, 0, aligning_p_gain_yaw_));
     }
@@ -381,18 +408,14 @@ namespace tsuten_behavior
     navigation_handler_.stopChassis();
   }
 
-  void BehaviorServer::backFromTable(const TableID &table_id)
+  void BehaviorServer::backFromTable(const GoalID &goal_id)
   {
     static const double LINEAR_ERROR_TOLERANCE = 0.1;
     static const double YAW_ERROR_TOLERANCE = 0.2;
 
     while (true)
     {
-      tf2::Transform robot_base_to_table_goal_tf;
-      while (!getRobotBaseToTableGoalTF(table_id, robot_base_to_table_goal_tf))
-      {
-        ;
-      }
+      auto robot_base_to_table_goal_tf = getRobotBaseToGoalTF(goal_id);
 
       auto linear_error = robot_base_to_table_goal_tf.getOrigin();
       auto yaw_error = tf2::getYaw(robot_base_to_table_goal_tf.getRotation());
@@ -414,49 +437,48 @@ namespace tsuten_behavior
     navigation_handler_.stopChassis();
   }
 
-  bool BehaviorServer::getRobotBaseToTableGoalTF(const TableID &table_id,
-                                                 tf2::Transform &robot_base_to_table_goal_tf)
+  tf2::Transform BehaviorServer::getRobotBaseToGoalTF(const GoalID &goal_id)
   {
-    auto table_goal_tf = getGoal(table_id);
+    bool should_wait_for_corrected_goal = true;
+    tf2::Transform robot_base_to_goal_tf;
 
-    tf2::Transform robot_base_tf;
-    try
+    while (true)
     {
-      tf2::fromMsg(
-          tf_buffer_.lookupTransform(global_frame_, robot_base_frame_,
-                                     ros::Time(0), ros::Duration(1.0))
-              .transform,
-          robot_base_tf);
+      try
+      {
+        if (should_wait_for_corrected_goal &&
+            tf_buffer_.canTransform(robot_base_frame_,
+                                    GOAL_NAMES.at(goal_id) + "_corrected_goal",
+                                    ros::Time::now(), ros::Duration(0.5)))
+        {
+          tf2::fromMsg(
+              tf_buffer_.lookupTransform(robot_base_frame_,
+                                         GOAL_NAMES.at(goal_id) + "_corrected_goal",
+                                         ros::Time(0), ros::Duration(0.5))
+                  .transform,
+              robot_base_to_goal_tf);
+        }
+        else
+        {
+          should_wait_for_corrected_goal = false;
+
+          tf2::fromMsg(
+              tf_buffer_.lookupTransform(robot_base_frame_,
+                                         GOAL_NAMES.at(goal_id) + "_goal",
+                                         ros::Time(0), ros::Duration(0.5))
+                  .transform,
+              robot_base_to_goal_tf);
+        }
+        break;
+      }
+      catch (const tf2::TransformException &exception)
+      {
+        ROS_ERROR("%s", exception.what());
+        continue;
+      }
     }
-    catch (const tf2::TransformException &exception)
-    {
-      ROS_ERROR("%s", exception.what());
-      return false;
-    }
 
-    robot_base_to_table_goal_tf = robot_base_tf.inverse() * table_goal_tf;
-
-    return true;
-  }
-
-  bool BehaviorServer::getTableTF(const TableBaseID &table_id, tf2::Transform &table_tf)
-  {
-    try
-    {
-      tf2::fromMsg(
-          tf_buffer_.lookupTransform(global_frame_, TABLE_BASE_NAMES.at(table_id) + "_link",
-                                     ros::Time(0), ros::Duration(1.0))
-              .transform,
-          table_tf);
-
-      return true;
-    }
-    catch (const tf2::TransformException &exception)
-    {
-      ROS_ERROR("%s", exception.what());
-
-      return false;
-    }
+    return robot_base_to_goal_tf;
   }
 
   void BehaviorServer::initializeShooters()
@@ -552,7 +574,7 @@ namespace tsuten_behavior
   void BehaviorServer::updateReconfigurableParameters()
   {
     BehaviorServerConfig config;
-    config.goal_distance_from_table = goal_distance_from_table_;
+    config.table_approach_vel = table_approach_vel_;
     config.aligning_p_gain_x = aligning_p_gain_x_;
     config.aligning_p_gain_y = aligning_p_gain_y_;
     config.aligning_p_gain_yaw = aligning_p_gain_yaw_;
@@ -565,22 +587,25 @@ namespace tsuten_behavior
   void BehaviorServer::reconfigureParameters(
       tsuten_behavior::BehaviorServerConfig &config, uint32_t level)
   {
-    goal_distance_from_table_ = config.goal_distance_from_table;
+    table_approach_vel_ = config.table_approach_vel;
     aligning_p_gain_x_ = config.aligning_p_gain_x;
     aligning_p_gain_y_ = config.aligning_p_gain_y;
     aligning_p_gain_yaw_ = config.aligning_p_gain_yaw;
-  }
-
-  void BehaviorServer::tablePoleCallback(const TableBaseID &table_base_id,
-                                         const geometry_msgs::PointStamped::ConstPtr &table_pole)
-  {
-    tf2::fromMsg(table_pole->point, table_pole_tfs_.at(table_base_id).getOrigin());
   }
 
   void BehaviorServer::sensorStatesCallback(const tsuten_msgs::SensorStates &sensor_states)
   {
     sensor_states_.bumper_l = static_cast<bool>(sensor_states.bumper_l);
     sensor_states_.bumper_r = static_cast<bool>(sensor_states.bumper_r);
+  }
+
+  BehaviorServer::PerformTarget BehaviorServer::getPerformTargetByTableID(const TableID &table_id)
+  {
+    return std::find_if(
+               PERFORM_TARGET_TO_TABLE_ID.cbegin(), PERFORM_TARGET_TO_TABLE_ID.cend(),
+               [table_id](const std::pair<PerformTarget, TableID> &perform_target_to_table_id_pair)
+               { return perform_target_to_table_id_pair.second == table_id; })
+        ->first;
   }
 } // namespace tsuten_behavior
 
