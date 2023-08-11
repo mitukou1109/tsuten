@@ -203,7 +203,7 @@ namespace tsuten_behavior
       auto goal_id = TABLE_ID_TO_GOAL_ID.at(table_id);
       const auto perform_target = getPerformTargetByTableID(table_id);
 
-      if (table_id_itr != goal_table_ids.cend() &&
+      if (table_id_itr == goal_table_ids.cbegin() ||
           !shouldSkipMovePerformPhase({*std::prev(table_id_itr), table_id}))
       {
         publishPerformFeedback(PerformPhase::MOVE, perform_target);
