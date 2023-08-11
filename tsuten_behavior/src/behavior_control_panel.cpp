@@ -3,6 +3,7 @@
 #include <pluginlib/class_list_macros.hpp>
 
 #include <tsuten_msgs/ResetShooter.h>
+#include <tsuten_msgs/SensorStates.h>
 #include <tsuten_msgs/ShootOnTable.h>
 
 namespace tsuten_behavior
@@ -22,11 +23,15 @@ namespace tsuten_behavior
 
   BehaviorControlPanel::BehaviorControlPanel(QWidget *parent)
       : rviz::Panel(parent),
+        ui_(parent),
+        pnh_("~"),
         behavior_server_nh_("behavior_server"),
-        perform_action_client_(behavior_server_nh_, "perform"),
-        ui_(parent)
+        perform_action_client_(behavior_server_nh_, "perform")
   {
     setLayout(ui_.getLayout());
+
+    ros::NodeHandle nh;
+    sensor_states_publisher_ = nh.advertise<tsuten_msgs::SensorStates>("sensor_states", 1);
 
     reset_all_shooters_service_client_ =
         behavior_server_nh_.serviceClient<tsuten_msgs::ResetShooter>("reset_all_shooters");
@@ -47,6 +52,9 @@ namespace tsuten_behavior
             { widgets.dual_table_upper_combo_box_->setEnabled(
                   widgets.table_check_boxes.at(TableID::DUAL_TABLE_UPPER)->isChecked()); });
 
+    connect(widgets.simulate_bumper_push_button, &QPushButton::clicked, this,
+            &BehaviorControlPanel::simulateBumperPush);
+
     for (auto &shoot_bottle_button_pair : widgets.shoot_bottle_buttons)
     {
       const auto &table_id = shoot_bottle_button_pair.first;
@@ -60,6 +68,28 @@ namespace tsuten_behavior
 
     connect(widgets.start_performance_button, &QPushButton::clicked, this, &BehaviorControlPanel::startPerformance);
     connect(widgets.stop_performance_button, &QPushButton::clicked, this, &BehaviorControlPanel::stopPerformance);
+  }
+
+  void BehaviorControlPanel::simulateBumperPush()
+  {
+    static const double BUMPER_PUSH_DURATION = 0.5;
+    static ros::Timer bumper_release_timer;
+
+    bumper_release_timer = pnh_.createTimer(
+        ros::Duration(BUMPER_PUSH_DURATION),
+        [this](const auto &)
+        {
+          tsuten_msgs::SensorStates sensor_states;
+          sensor_states.bumper_l = false;
+          sensor_states.bumper_r = false;
+          sensor_states_publisher_.publish(sensor_states);
+        },
+        true);
+
+    tsuten_msgs::SensorStates sensor_states;
+    sensor_states.bumper_l = true;
+    sensor_states.bumper_r = true;
+    sensor_states_publisher_.publish(sensor_states);
   }
 
   void BehaviorControlPanel::resetAllShooters()
@@ -104,7 +134,7 @@ namespace tsuten_behavior
                                  ui_.getWidgets().dual_table_upper_combo_box_->currentIndex()))
                          .first;
         }
-        tables.emplace_back(TABLE_ID_TO_PERFORM_GOAL_TABLES.at(table_id));
+        tables.emplace_back(TABLE_ID_TO_PERFORM_GOAL_TABLE.at(table_id));
         tables_text += " " + TABLE_TEXTS.at(table_id) + ",";
       }
     }
@@ -147,6 +177,7 @@ namespace tsuten_behavior
     {
       table_check_box_pair.second->setEnabled(state_bool);
     }
+    widgets.dual_table_upper_combo_box_->setEnabled(state_bool);
     for (auto &shoot_bottle_button_pair : widgets.shoot_bottle_buttons)
     {
       shoot_bottle_button_pair.second->setEnabled(state_bool);

@@ -24,6 +24,8 @@ namespace tsuten_behavior
       IDLE = true
     };
 
+    void simulateBumperPush();
+
     void resetAllShooters();
 
     void shootOnTable(TableID table_id);
@@ -37,11 +39,14 @@ namespace tsuten_behavior
     static const std::unordered_map<TableID, uint8_t>
         TABLE_ID_TO_SHOOT_ON_TABLE_REQUEST_TABLE_ID;
 
+    BehaviorControlPanelUI ui_;
+
+    ros::NodeHandle pnh_;
     ros::NodeHandle behavior_server_nh_;
 
-    actionlib::SimpleActionClient<tsuten_msgs::PerformAction> perform_action_client_;
+    ros::Publisher sensor_states_publisher_;
 
-    BehaviorControlPanelUI ui_;
+    actionlib::SimpleActionClient<tsuten_msgs::PerformAction> perform_action_client_;
 
     ros::ServiceClient reset_all_shooters_service_client_;
     ros::ServiceClient shoot_on_table_service_client_;

@@ -6,6 +6,13 @@
 #include <QLineEdit>
 namespace tsuten_behavior
 {
+  const std::vector<TableID> BehaviorControlPanelUI::WIDGET_TABLE_IDS =
+      {TableID::DUAL_TABLE_UPPER,
+       TableID::DUAL_TABLE_LOWER,
+       TableID::MOVABLE_TABLE_1200,
+       TableID::MOVABLE_TABLE_1500,
+       TableID::MOVABLE_TABLE_1800};
+
   const std::map<TableID, std::string> BehaviorControlPanelUI::DUAL_TABLE_UPPER_COMBO_BOX_ITEMS =
       {{TableID::DUAL_TABLE_UPPER_F, "Front"},
        {TableID::DUAL_TABLE_UPPER_R, "Right"},
@@ -19,7 +26,7 @@ namespace tsuten_behavior
            {TableID::MOVABLE_TABLE_1800, 3}};
 
   const std::unordered_map<TableID, int>
-      BehaviorControlPanelUI::SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS =
+      BehaviorControlPanelUI::SHOOT_BOTTLE_BUTTON_GRID_COLUMNS =
           {{TableID::DUAL_TABLE_LOWER, 0},
            {TableID::DUAL_TABLE_UPPER, 0},
            {TableID::MOVABLE_TABLE_1200, 1},
@@ -33,21 +40,11 @@ namespace tsuten_behavior
     auto tables_layout = new QGridLayout;
     auto dual_table_layout = new QVBoxLayout;
     dual_table_layout->setSpacing(0);
-    tables_layout->addLayout(dual_table_layout, 1, 0, Qt::AlignHCenter | Qt::AlignBottom);
+    tables_layout->addLayout(dual_table_layout, 2, 0, Qt::AlignHCenter | Qt::AlignBottom);
 
-    for (auto &table_name_pair : TABLE_NAMES)
+    for (auto &table_id : WIDGET_TABLE_IDS)
     {
-      auto &table_id = table_name_pair.first;
-      auto &table_name = table_name_pair.second;
-
-      if (table_id == TableID::HOME ||
-          table_id == TableID::DUAL_TABLE_UPPER_F ||
-          table_id == TableID::DUAL_TABLE_UPPER_R ||
-          table_id == TableID::DUAL_TABLE_UPPER_B ||
-          table_id == TableID::DUAL_TABLE_UPPER_L)
-      {
-        continue;
-      }
+      const auto &table_name = TABLE_NAMES.at(table_id);
 
       QCheckBox *table_check_box = new QCheckBox;
       table_check_box->setStyleSheet(QString::fromStdString(
@@ -82,19 +79,19 @@ namespace tsuten_behavior
         dual_table_layout->insertWidget(0, table_check_box);
         break;
       case TableID::DUAL_TABLE_LOWER:
-        dual_table_layout->insertWidget(-1, table_check_box);
+        dual_table_layout->insertWidget(1, table_check_box);
         break;
       default:
         tables_layout->addWidget(table_check_box,
-                                 1,
+                                 2,
                                  MOVABLE_TABLE_CHECK_BOX_GRID_COLUMNS.at(table_id),
-                                 Qt::AlignCenter | Qt::AlignBottom);
+                                 Qt::AlignHCenter | Qt::AlignBottom);
         break;
       }
 
       tables_layout->addWidget(
-          shoot_bottle_button, (table_id == TableID::DUAL_TABLE_UPPER) ? 0 : 2,
-          SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS.at(table_id), Qt::AlignCenter);
+          shoot_bottle_button, (table_id == TableID::DUAL_TABLE_UPPER) ? 0 : 3,
+          SHOOT_BOTTLE_BUTTON_GRID_COLUMNS.at(table_id), Qt::AlignCenter);
     }
 
     widgets_.dual_table_upper_combo_box_ = new QComboBox;
@@ -106,10 +103,14 @@ namespace tsuten_behavior
     widgets_.dual_table_upper_combo_box_->setStyleSheet(
         "QComboBox {padding: 2px 2px 2px 5px; margin-bottom: 10px;}");
     widgets_.dual_table_upper_combo_box_->setEnabled(false);
-    dual_table_layout->insertWidget(0, widgets_.dual_table_upper_combo_box_);
+    tables_layout->addWidget(widgets_.dual_table_upper_combo_box_, 1, 0, Qt::AlignCenter);
+
+    widgets_.simulate_bumper_push_button = new QPushButton("Simulate bumper push");
+    tables_layout->addWidget(widgets_.simulate_bumper_push_button, 0, 2, 1, 2, Qt::AlignRight);
 
     widgets_.reset_all_shooters_button = new QPushButton("Reset all shooters");
-    tables_layout->addWidget(widgets_.reset_all_shooters_button, 0, 2, 1, 2, Qt::AlignCenter);
+    tables_layout->addWidget(widgets_.reset_all_shooters_button,
+                             1, 2, 1, 2, Qt::AlignRight | Qt::AlignTop);
 
     widgets_.start_performance_button = new QPushButton("Start performance");
     widgets_.stop_performance_button = new QPushButton("Stop performance");

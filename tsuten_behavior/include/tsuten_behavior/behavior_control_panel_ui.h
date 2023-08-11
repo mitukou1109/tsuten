@@ -17,8 +17,9 @@ namespace tsuten_behavior
   public:
     struct Widgets
     {
-      std::unordered_map<TableID, QCheckBox *> table_check_boxes;
+      std::map<TableID, QCheckBox *> table_check_boxes;
       QComboBox *dual_table_upper_combo_box_;
+      QPushButton *simulate_bumper_push_button;
       std::unordered_map<TableID, QPushButton *> shoot_bottle_buttons;
       QPushButton *reset_all_shooters_button;
 
@@ -48,9 +49,11 @@ namespace tsuten_behavior
     const Widgets &getWidgets() { return widgets_; }
 
   private:
+    static const std::vector<TableID> WIDGET_TABLE_IDS;
+
     static const std::unordered_map<TableID, int> MOVABLE_TABLE_CHECK_BOX_GRID_COLUMNS;
 
-    static const std::unordered_map<TableID, int> SHOOT_BOTTLE_BUTTON_LAYOUT_COLUMNS;
+    static const std::unordered_map<TableID, int> SHOOT_BOTTLE_BUTTON_GRID_COLUMNS;
 
     QWidget *parent_;
 
