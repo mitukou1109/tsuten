@@ -1,19 +1,17 @@
-#include <algorithm>
 #include <boost/thread/lock_guard.hpp>
-#include <random>
 #include <unordered_map>
+
+#include <opencv2/imgproc.hpp>
 
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
-#include <geometry_msgs/PointStamped.h>
-#include <laser_geometry/laser_geometry.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl_conversions/pcl_conversions.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/LaserScan.h>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2/utils.h>
+#include <visualization_msgs/Marker.h>
 #include <XmlRpcException.h>
 
 #include <tsuten_behavior/constants.hpp>
@@ -31,23 +29,24 @@ namespace tsuten_behavior
     {
       pnh_.param("global_frame", global_frame_, std::string("map"));
       pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
-      pnh_.param("cluster_tolerance", cluster_tolerance_, 0.1);
-      pnh_.param("min_cluster_size", min_cluster_size_, 5);
-      pnh_.param("table_pole_error_tolerance", table_pole_error_tolerance, 0.25);
+      pnh_.param("goal_distance_from_table_base_face", goal_distance_from_table_base_face_, 0.6);
+      pnh_.param("hough_rho", hough_rho_, 0.01);
+      pnh_.param("hough_theta", hough_theta_, M_PI / 12);
+      pnh_.param("hough_threshold", hough_threshold_, 10);
+      pnh_.param("hough_min_line_length", hough_min_line_length_, 0.5 * 0.75);
+      pnh_.param("hough_max_line_gap", hough_max_line_gap_, 0.05);
+      pnh_.param("table_base_face_center_error_tolerance",
+                 table_base_face_center_error_tolerance_, 0.25);
+
+      initializeTables();
+
+      initializeDetectedLinesMarker();
 
       ros::NodeHandle nh;
+      lidar_detected_lines_marker_pub_ =
+          nh.advertise<visualization_msgs::Marker>("lidar/detected_lines_marker", 10);
       lidar_scan_sub_ = nh.subscribe("lidar/scan", 10, &TableManager::lidarScanCallback, this);
-      for (auto &table_base_name_pair : TABLE_BASE_NAMES)
-      {
-        auto &table_base_id = table_base_name_pair.first;
-        auto &table_base_name = table_base_name_pair.second;
-
-        table_pole_pubs_.insert(
-            {table_base_id,
-             nh.advertise<geometry_msgs::PointStamped>("table_pole/" + table_base_name, 10)});
-      }
-
-      initializeTableTFs();
+      map_sub_ = nh.subscribe("map", 10, &TableManager::mapCallback, this);
 
       static_tf_broadcaster_.sendTransform(createTableTFMsg(TableBaseID::DUAL_TABLE));
 
@@ -63,7 +62,9 @@ namespace tsuten_behavior
   private:
     static const std::unordered_map<TableBaseID, tf2::Vector3> DEFAULT_TABLE_POSITIONS;
 
-    void initializeTableTFs()
+    static const std::vector<GoalID> TABLE_GOAL_IDS;
+
+    void initializeTables()
     {
       XmlRpc::XmlRpcValue table_position_list;
       if (pnh_.getParam("table_position", table_position_list))
@@ -114,6 +115,36 @@ namespace tsuten_behavior
       {
         ROS_WARN("Table positions not set, using default values");
       }
+
+      for (const auto &table_goal_id : TABLE_GOAL_IDS)
+      {
+        table_base_face_centers_.insert({table_goal_id, tf2::Vector3()});
+        table_goals_.insert({table_goal_id, tf2::Transform()});
+        corrected_table_goals_.insert({table_goal_id, tf2::Stamped<tf2::Transform>()});
+      }
+
+      updateTableGoals();
+    }
+
+    void updateTableGoals()
+    {
+      for (const auto &table_center_to_goal_quat_pair : TABLE_CENTER_TO_GOAL_QUATS)
+      {
+        auto &goal_id = table_center_to_goal_quat_pair.first;
+        auto &table_center_to_goal_quat = table_center_to_goal_quat_pair.second;
+        auto &table_base_id = GOAL_ID_TO_TABLE_BASE_ID.at(goal_id);
+
+        table_base_face_centers_.at(goal_id) =
+            table_positions_.at(table_base_id) -
+            TABLE_SIZES.at(table_base_id) / 2 *
+                tf2::quatRotate(table_center_to_goal_quat, {0, 1, 0});
+
+        table_goals_.at(goal_id) =
+            tf2::Transform(table_center_to_goal_quat,
+                           table_base_face_centers_.at(goal_id) -
+                               goal_distance_from_table_base_face_ *
+                                   tf2::quatRotate(table_center_to_goal_quat, {0, 1, 0}));
+      }
     }
 
     geometry_msgs::TransformStamped createTableTFMsg(const TableBaseID &table_base_id)
@@ -130,134 +161,234 @@ namespace tsuten_behavior
 
     void publishTF(const ros::TimerEvent &event)
     {
-      for (auto &table_position_pair : table_positions_)
+      static ros::Time last_publish_time = ros::Time::now();
+
+      auto now_time = ros::Time::now();
+      if (last_publish_time == now_time)
       {
-        tf_broadcaster_.sendTransform(createTableTFMsg(table_position_pair.first));
+        return;
       }
+
+      for (const auto &table_goal_pair : table_goals_)
+      {
+        auto &goal_id = table_goal_pair.first;
+        auto &table_goal = table_goal_pair.second;
+
+        if (goal_id == GoalID::MOVABLE_TABLE_1200 ||
+            goal_id == GoalID::MOVABLE_TABLE_1500 ||
+            goal_id == GoalID::MOVABLE_TABLE_1800)
+        {
+          tf_broadcaster_.sendTransform(createTableTFMsg(GOAL_ID_TO_TABLE_BASE_ID.at(goal_id)));
+        }
+
+        geometry_msgs::TransformStamped table_goal_tf_msg;
+        table_goal_tf_msg.header.frame_id = global_frame_;
+        table_goal_tf_msg.header.stamp = now_time;
+        table_goal_tf_msg.child_frame_id = GOAL_NAMES.at(goal_id) + "_goal";
+        table_goal_tf_msg.transform = tf2::toMsg(table_goal);
+
+        tf_broadcaster_.sendTransform(table_goal_tf_msg);
+
+        const auto &corrected_table_goal = corrected_table_goals_.at(goal_id);
+        if (ros::Time::now() - corrected_table_goal.stamp_ <
+            ros::Duration(ros::Rate(tf_publish_rate_)))
+        {
+          auto corrected_table_goal_tf_msg = tf2::toMsg(corrected_table_goal);
+          corrected_table_goal_tf_msg.header.stamp = now_time;
+          corrected_table_goal_tf_msg.child_frame_id =
+              GOAL_NAMES.at(goal_id) + "_corrected_goal";
+
+          tf_broadcaster_.sendTransform(corrected_table_goal_tf_msg);
+        }
+      }
+
+      last_publish_time = now_time;
+    }
+
+    void initializeDetectedLinesMarker()
+    {
+      detected_lines_marker_.header.frame_id = global_frame_;
+      detected_lines_marker_.ns = "lidar/detected_lines";
+      detected_lines_marker_.id = 0;
+      detected_lines_marker_.type = visualization_msgs::Marker::LINE_LIST;
+      detected_lines_marker_.action = visualization_msgs::Marker::ADD;
+      detected_lines_marker_.pose.orientation.w = 1.0;
+      detected_lines_marker_.scale.x = 0.05;
+      detected_lines_marker_.color.g = 1.0;
+      detected_lines_marker_.color.a = 1.0;
     }
 
     void lidarScanCallback(const sensor_msgs::LaserScanConstPtr &lidar_scan)
     {
-      static std::mt19937 random_engine((std::random_device())());
-      static const int NUM_OF_CLUSTER_REP_POINTS = 3;
-      static const int NUM_OF_ARC_CENTER_SAMPLES = 10;
-      static const double ARC_CENTER_ERROR_TOLERANCE = 0.05;
+      tf2::Transform lidar_start_tf, lidar_end_tf;
+      try
+      {
+        tf2::fromMsg(tf_buffer_.lookupTransform(global_frame_,
+                                                lidar_scan->header.frame_id,
+                                                lidar_scan->header.stamp,
+                                                ros::Duration(1.0))
+                         .transform,
+                     lidar_start_tf);
 
-      if (!tf_buffer_.canTransform(
-              lidar_scan->header.frame_id,
-              global_frame_,
-              lidar_scan->header.stamp +
-                  ros::Duration().fromSec(lidar_scan->ranges.size() * lidar_scan->time_increment),
-              ros::Duration(1.0)))
+        tf2::fromMsg(tf_buffer_.lookupTransform(global_frame_,
+                                                lidar_scan->header.frame_id,
+                                                lidar_scan->header.stamp +
+                                                    ros::Duration(lidar_scan->ranges.size() *
+                                                                  lidar_scan->time_increment),
+                                                ros::Duration(1.0))
+                         .transform,
+                     lidar_end_tf);
+      }
+      catch (const tf2::TransformException &exception)
       {
         return;
       }
 
-      sensor_msgs::PointCloud2 cloud_msg;
-      laser_projector_.transformLaserScanToPointCloud(global_frame_, *lidar_scan,
-                                                      cloud_msg, tf_buffer_);
-      if (cloud_msg.data.empty())
+      cv::Mat scan_image(map_metadata_.height, map_metadata_.width, CV_8UC1, cv::Scalar(0));
+      if (scan_image.empty())
       {
         return;
       }
 
-      auto cloud = boost::make_shared<pcl::PointCloud<pcl::PointXYZ>>();
-      pcl::fromROSMsg(cloud_msg, *cloud);
-
-      auto kd_tree = boost::make_shared<pcl::search::KdTree<pcl::PointXYZ>>();
-      kd_tree->setInputCloud(cloud);
-
-      pcl::EuclideanClusterExtraction<pcl::PointXYZ> cluster_extractor;
-      cluster_extractor.setClusterTolerance(cluster_tolerance_);
-      cluster_extractor.setMinClusterSize(min_cluster_size_);
-      cluster_extractor.setSearchMethod(kd_tree);
-      cluster_extractor.setInputCloud(cloud);
-
-      std::vector<pcl::PointIndices> clusters;
-      cluster_extractor.extract(clusters);
-
-      for (auto &cluster : clusters)
+      for (int i = 0; i < lidar_scan->ranges.size(); i++)
       {
-        std::vector<tf2::Vector3> arc_center_samples;
-        for (int i = 0; i < NUM_OF_ARC_CENTER_SAMPLES; i++)
+        tf2::Vector3 local_scan_point(lidar_scan->ranges.at(i) *
+                                          std::cos(lidar_scan->angle_min +
+                                                   lidar_scan->angle_increment * i),
+                                      lidar_scan->ranges.at(i) *
+                                          std::sin(lidar_scan->angle_min +
+                                                   lidar_scan->angle_increment * i),
+                                      0);
+
+        auto lerp_ratio = i / (lidar_scan->ranges.size() - 1.);
+        auto global_scan_point =
+            tf2::Transform(tf2::slerp(lidar_start_tf.getRotation(), lidar_end_tf.getRotation(),
+                                      lerp_ratio),
+                           tf2::lerp(lidar_start_tf.getOrigin(), lidar_end_tf.getOrigin(),
+                                     lerp_ratio)) *
+            local_scan_point;
+
+        try
         {
-          std::vector<int> rep_indices;
-          std::sample(cluster.indices.cbegin(), cluster.indices.cend(),
-                      std::back_inserter(rep_indices), NUM_OF_CLUSTER_REP_POINTS, random_engine);
-
-          std::array<pcl::PointXYZ, NUM_OF_CLUSTER_REP_POINTS> p;
-          for (int i = 0; i < NUM_OF_CLUSTER_REP_POINTS; i++)
-          {
-            p.at(i) = cloud->points.at(rep_indices.at(i));
-          }
-
-          double d = 2 * (p[0].x - p[1].x) * (p[0].y - p[2].y) -
-                     2 * (p[0].x - p[2].x) * (p[0].y - p[1].y);
-
-          double n_x = (p[0].y - p[1].y) * (std::pow(p[2].x, 2) - std::pow(p[0].x, 2) +
-                                            std::pow(p[2].y, 2) - std::pow(p[0].y, 2)) -
-                       (p[0].y - p[2].y) * (std::pow(p[1].x, 2) - std::pow(p[0].x, 2) +
-                                            std::pow(p[1].y, 2) - std::pow(p[0].y, 2));
-
-          double n_y = (p[0].x - p[2].x) * (std::pow(p[1].x, 2) - std::pow(p[0].x, 2) +
-                                            std::pow(p[1].y, 2) - std::pow(p[0].y, 2)) -
-                       (p[0].x - p[1].x) * (std::pow(p[2].x, 2) - std::pow(p[0].x, 2) +
-                                            std::pow(p[2].y, 2) - std::pow(p[0].y, 2));
-
-          arc_center_samples.emplace_back(n_x / d, n_y / d, 0);
+          scan_image.at<uint8_t>(
+              scan_image.rows -
+                  std::lround((global_scan_point.y() + map_metadata_.origin.position.y) /
+                              map_metadata_.resolution),
+              std::lround((global_scan_point.x() + map_metadata_.origin.position.x) /
+                          map_metadata_.resolution)) = 255;
         }
-
-        auto arc_center_avg =
-            std::accumulate(arc_center_samples.cbegin(), arc_center_samples.cend(),
-                            tf2::Vector3(0, 0, 0)) /
-            arc_center_samples.size();
-
-        for (auto arc_center_itr = arc_center_samples.cbegin();
-             arc_center_itr != arc_center_samples.cend();)
+        catch (const cv::Exception &exception)
         {
-          if ((*arc_center_itr - arc_center_avg).length() > ARC_CENTER_ERROR_TOLERANCE)
-          {
-            arc_center_itr = arc_center_samples.erase(arc_center_itr);
-          }
-          else
-          {
-            arc_center_itr++;
-          }
-        }
-
-        arc_center_avg =
-            std::accumulate(arc_center_samples.cbegin(), arc_center_samples.cend(),
-                            tf2::Vector3(0, 0, 0)) /
-            arc_center_samples.size();
-
-        for (auto &table_position_pair : table_positions_)
-        {
-          auto &table_base_id = table_position_pair.first;
-          auto &table_position = table_position_pair.second;
-
-          if ((arc_center_avg - table_position).length() < table_pole_error_tolerance)
-          {
-            geometry_msgs::PointStamped table_pole_msg;
-            table_pole_msg.header.frame_id = global_frame_;
-            table_pole_msg.header.stamp = ros::Time::now();
-            tf2::toMsg(arc_center_avg, table_pole_msg.point);
-            table_pole_msg.point.z = cloud->points.at(0).z;
-
-            table_pole_pubs_.at(table_base_id).publish(table_pole_msg);
-          }
+          ROS_WARN("%s", exception.what());
+          continue;
         }
       }
+
+      std::vector<cv::Vec4i> lines;
+      cv::HoughLinesP(scan_image, lines,
+                      std::max(hough_rho_ / map_metadata_.resolution, 1.0),
+                      hough_theta_,
+                      hough_threshold_,
+                      hough_min_line_length_ / map_metadata_.resolution,
+                      hough_max_line_gap_ / map_metadata_.resolution);
+
+      detected_lines_marker_.points.clear();
+
+      std::vector<tf2::Vector3> line_centers;
+      for (const auto &line : lines)
+      {
+        tf2::Vector3 line_start(
+            line[0] * map_metadata_.resolution - map_metadata_.origin.position.x,
+            (scan_image.rows - line[1]) * map_metadata_.resolution -
+                map_metadata_.origin.position.y,
+            0);
+        tf2::Vector3 line_end(
+            line[2] * map_metadata_.resolution - map_metadata_.origin.position.x,
+            (scan_image.rows - line[3]) * map_metadata_.resolution -
+                map_metadata_.origin.position.y,
+            0);
+
+        line_centers.emplace_back((line_start + line_end) / 2);
+
+        geometry_msgs::Point line_point_msg;
+        tf2::toMsg(line_start, line_point_msg);
+        line_point_msg.z = lidar_start_tf.getOrigin().z();
+        detected_lines_marker_.points.push_back(line_point_msg);
+
+        tf2::toMsg(line_end, line_point_msg);
+        line_point_msg.z = lidar_end_tf.getOrigin().z();
+        detected_lines_marker_.points.push_back(line_point_msg);
+      }
+
+      detected_lines_marker_.header.stamp = ros::Time::now();
+      lidar_detected_lines_marker_pub_.publish(detected_lines_marker_);
+
+      for (const auto &table_base_face_center_pair : table_base_face_centers_)
+      {
+        auto &goal_id = table_base_face_center_pair.first;
+        auto &table_base_face_center = table_base_face_center_pair.second;
+
+        auto corrected_table_base_face_center_itr = line_centers.cend();
+        for (auto line_center_itr = line_centers.cbegin();
+             line_center_itr != line_centers.cend();
+             line_center_itr++)
+        {
+          if ((*line_center_itr - table_base_face_center).length() <
+              table_base_face_center_error_tolerance_)
+          {
+            if (corrected_table_base_face_center_itr == line_centers.cend())
+            {
+              corrected_table_base_face_center_itr = line_center_itr;
+            }
+            else
+            {
+              ROS_WARN("Multiple lines detected on the same table base's face."
+                       "Consider tuning parameters for Hough transform.");
+              corrected_table_base_face_center_itr = std::min(
+                  corrected_table_base_face_center_itr, line_center_itr,
+                  [table_base_face_center](const auto lhs, const auto rhs)
+                  {
+                    return (*lhs - table_base_face_center).length() <
+                           (*rhs - table_base_face_center).length();
+                  });
+            }
+          }
+        }
+
+        if (corrected_table_base_face_center_itr != line_centers.cend())
+        {
+          corrected_table_goals_.at(goal_id) =
+              tf2::Stamped<tf2::Transform>(
+                  table_goals_.at(goal_id) *
+                      tf2::Transform(tf2::Quaternion::getIdentity(),
+                                     *corrected_table_base_face_center_itr -
+                                         table_base_face_center),
+                  ros::Time::now(), global_frame_);
+        }
+      }
+    }
+
+    void mapCallback(const nav_msgs::OccupancyGrid &map)
+    {
+      map_metadata_ = map.info;
     }
 
     void updateReconfigurableParameters()
     {
       TableManagerConfig config;
+      config.goal_distance_from_table_base_face = goal_distance_from_table_base_face_;
       config.movable_table_1200_position_y =
           table_positions_.at(TableBaseID::MOVABLE_TABLE_1200).getY();
       config.movable_table_1500_position_y =
           table_positions_.at(TableBaseID::MOVABLE_TABLE_1500).getY();
       config.movable_table_1800_position_y =
           table_positions_.at(TableBaseID::MOVABLE_TABLE_1800).getY();
+      config.hough_rho = hough_rho_;
+      config.hough_theta = hough_theta_;
+      config.hough_threshold = hough_threshold_;
+      config.hough_min_line_length = hough_min_line_length_;
+      config.hough_max_line_gap = hough_max_line_gap_;
+      config.table_base_face_center_error_tolerance = table_base_face_center_error_tolerance_;
       {
         boost::lock_guard<boost::recursive_mutex> lock(reconfigure_mutex_);
         reconfigure_server_.updateConfig(config);
@@ -272,13 +403,23 @@ namespace tsuten_behavior
           .setY(config.movable_table_1500_position_y);
       table_positions_.at(TableBaseID::MOVABLE_TABLE_1800)
           .setY(config.movable_table_1800_position_y);
+      hough_rho_ = config.hough_rho;
+      hough_theta_ = config.hough_theta;
+      hough_threshold_ = config.hough_threshold;
+      hough_min_line_length_ = config.hough_min_line_length;
+      hough_max_line_gap_ = config.hough_max_line_gap;
+      table_base_face_center_error_tolerance_ = config.table_base_face_center_error_tolerance;
+
+      updateTableGoals();
     }
 
     ros::NodeHandle pnh_;
 
-    std::unordered_map<TableBaseID, ros::Publisher> table_pole_pubs_;
+    ros::Publisher lidar_detected_lines_marker_pub_;
 
     ros::Subscriber lidar_scan_sub_;
+
+    ros::Subscriber map_sub_;
 
     ros::Timer publish_tf_timer_;
 
@@ -295,16 +436,29 @@ namespace tsuten_behavior
 
     std::unordered_map<TableBaseID, tf2::Vector3> table_positions_;
 
-    laser_geometry::LaserProjection laser_projector_;
+    std::unordered_map<GoalID, tf2::Vector3> table_base_face_centers_;
+
+    std::unordered_map<GoalID, tf2::Transform> table_goals_;
+
+    std::unordered_map<GoalID, tf2::Stamped<tf2::Transform>> corrected_table_goals_;
+
+    nav_msgs::MapMetaData map_metadata_;
+
+    visualization_msgs::Marker detected_lines_marker_;
 
     std::string global_frame_;
 
     double tf_publish_rate_;
 
-    double cluster_tolerance_;
-    int min_cluster_size_;
+    double goal_distance_from_table_base_face_;
 
-    double table_pole_error_tolerance;
+    double hough_rho_;
+    double hough_theta_;
+    int hough_threshold_;
+    double hough_min_line_length_;
+    double hough_max_line_gap_;
+
+    double table_base_face_center_error_tolerance_;
   };
 
   const std::unordered_map<TableBaseID, tf2::Vector3> TableManager::DEFAULT_TABLE_POSITIONS =
@@ -312,6 +466,15 @@ namespace tsuten_behavior
        {TableBaseID::MOVABLE_TABLE_1200, {4.5, 1.9, 0}},
        {TableBaseID::MOVABLE_TABLE_1500, {5.5, 1.9, 0}},
        {TableBaseID::MOVABLE_TABLE_1800, {6.5, 1.9, 0}}};
+
+  const std::vector<GoalID> TableManager::TABLE_GOAL_IDS =
+      {GoalID::DUAL_TABLE_F,
+       GoalID::DUAL_TABLE_R,
+       GoalID::DUAL_TABLE_B,
+       GoalID::DUAL_TABLE_L,
+       GoalID::MOVABLE_TABLE_1200,
+       GoalID::MOVABLE_TABLE_1500,
+       GoalID::MOVABLE_TABLE_1800};
 } // namespace tsuten_behavior
 
 int main(int argc, char **argv)
