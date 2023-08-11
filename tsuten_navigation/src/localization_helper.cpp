@@ -35,8 +35,16 @@ namespace tsuten_navigation
   private:
     void publishTF(const ros::TimerEvent &event)
     {
+      static ros::Time last_publish_time = ros::Time::now();
+
+      auto now_time = ros::Time::now();
+      if (last_publish_time == now_time)
+      {
+        return;
+      }
+
       geometry_msgs::TransformStamped odom_to_global_tf_msg;
-      odom_to_global_tf_msg.header.stamp = ros::Time::now() + ros::Duration(0.05);
+      odom_to_global_tf_msg.header.stamp = now_time + ros::Duration(0.05);
       odom_to_global_tf_msg.header.frame_id = global_frame_;
       odom_to_global_tf_msg.child_frame_id = odom_frame_;
       odom_to_global_tf_msg.transform = tf2::toMsg(odom_to_global_tf_);
@@ -46,13 +54,15 @@ namespace tsuten_navigation
       if (publish_odom_tf_)
       {
         geometry_msgs::TransformStamped robot_base_to_odom_tf_msg;
-        robot_base_to_odom_tf_msg.header.stamp = ros::Time::now();
+        robot_base_to_odom_tf_msg.header.stamp = now_time;
         robot_base_to_odom_tf_msg.header.frame_id = odom_frame_;
         robot_base_to_odom_tf_msg.child_frame_id = robot_base_frame_;
         robot_base_to_odom_tf_msg.transform = tf2::toMsg(robot_base_to_odom_tf_);
 
         tf_broadcaster_.sendTransform(robot_base_to_odom_tf_msg);
       }
+
+      last_publish_time = now_time;
     }
 
     void odomCallback(const nav_msgs::Odometry &odom)
