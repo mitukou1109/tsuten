@@ -133,9 +133,7 @@ namespace tsuten_behavior
         table_marker.type = visualization_msgs::Marker::CUBE;
         // table_marker.type = visualization_msgs::Marker::MESH_RESOURCE;
         // table_marker.mesh_resource = table_mesh_resource_dir + "/" + table_name + ".stl";
-        table_marker.scale.x = TABLE_SIZES.at(table_base_id).at(0);
-        table_marker.scale.y = TABLE_SIZES.at(table_base_id).at(1);
-        table_marker.scale.z = TABLE_SIZES.at(table_base_id).at(2);
+        table_marker.scale = tf2::toMsg(TABLE_SIZES.at(table_base_id));
         table_marker.color.r = TABLE_MARKER_COLORS.at(table_base_id).at(0);
         table_marker.color.g = TABLE_MARKER_COLORS.at(table_base_id).at(1);
         table_marker.color.b = TABLE_MARKER_COLORS.at(table_base_id).at(2);
@@ -168,7 +166,7 @@ namespace tsuten_behavior
         {
           tf2::toMsg(
               tf * tf2::Transform(tf2::Quaternion::getIdentity(),
-                                  {0, 0, TABLE_SIZES.at(table_base_id).at(2) / 2}),
+                                  {0, 0, TABLE_SIZES.at(table_base_id).z() / 2}),
               table_marker.pose);
           table_markers_msg.markers.push_back(table_marker);
         }
@@ -219,17 +217,7 @@ namespace tsuten_behavior
     void displayPerformFeedback(const tsuten_msgs::PerformActionFeedback &feedback)
     {
       perform_feedback_text_.action = jsk_rviz_plugins::OverlayText::ADD;
-      perform_feedback_text_.text =
-          "Perform status: " + PERFORM_FEEDBACK_PHASE_TEXTS.at(feedback.feedback.phase) + " " +
-          TABLE_TEXTS.at(
-              std::find_if(
-                  TABLE_ID_TO_PERFORM_FEEDBACK_TABLES.begin(),
-                  TABLE_ID_TO_PERFORM_FEEDBACK_TABLES.end(),
-                  [&feedback](const std::pair<TableID, uint8_t>
-                                  &table_id_to_perform_feedback_table_pair)
-                  { return table_id_to_perform_feedback_table_pair.second ==
-                           feedback.feedback.table; })
-                  ->first);
+      perform_feedback_text_.text = feedback.feedback.status;
 
       perform_feedback_text_pub_.publish(perform_feedback_text_);
     }
