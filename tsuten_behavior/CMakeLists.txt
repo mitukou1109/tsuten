@@ -5,11 +5,11 @@ find_package(catkin REQUIRED
   COMPONENTS
     actionlib
     jsk_rviz_plugins
-    pcl_conversions
-    pcl_ros
+    nav_msgs
     pluginlib
     roscpp
     rviz
+    sensor_msgs
     std_msgs
     tf2
     tf2_ros
@@ -27,17 +27,17 @@ find_package(Qt5 ${rviz_QT_VERSION} EXACT REQUIRED
 set(QT_LIBRARIES Qt5::Widgets)
 add_definitions(-DQT_NO_KEYWORDS)
 
-find_package(PCL 1.10 REQUIRED)
+find_package(OpenCV REQUIRED)
 
 catkin_package(
   CATKIN_DEPENDS
     actionlib
     jsk_rviz_plugins
-    pcl_conversions
-    pcl_ros
+    nav_msgs
     pluginlib
     roscpp
     rviz
+    sensor_msgs
     std_msgs
     tf2
     tf2_ros
@@ -99,8 +99,9 @@ target_include_directories(table_manager
   PUBLIC
     include
     ${catkin_INCLUDE_DIRS}
+    ${OpenCV_INCLUDE_DIRS}
 )
 target_link_libraries(table_manager
   ${catkin_LIBRARIES}
+  ${OpenCV_LIBRARIES}
 )
-target_compile_features(table_manager PUBLIC cxx_std_17)

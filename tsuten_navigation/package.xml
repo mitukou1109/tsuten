@@ -19,7 +19,6 @@
   <depend>tsuten_msgs</depend>
 
   <exec_depend>navigation</exec_depend>
-  <exec_depend>teb_local_planner</exec_depend>
 
   <buildtool_depend>catkin</buildtool_depend>
 </package>

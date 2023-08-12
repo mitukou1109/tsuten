@@ -11,12 +11,12 @@
 
   <depend>actionlib</depend>
   <depend>jsk_rviz_plugins</depend>
-  <depend>libpcl-dev</depend>
-  <depend>pcl_conversions</depend>
-  <depend>pcl_ros</depend>
+  <depend>nav_msgs</depend>
+  <depend>libopencv-dev</depend>
   <depend>pluginlib</depend>
   <depend>roscpp</depend>
   <depend>rviz</depend>
+  <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
