@@ -108,8 +108,8 @@ namespace tsuten_behavior
     widgets_.simulate_bumper_push_button = new QPushButton("Simulate bumper push");
     tables_layout->addWidget(widgets_.simulate_bumper_push_button, 0, 2, 1, 2, Qt::AlignRight);
 
-    widgets_.reset_all_shooters_button = new QPushButton("Reset all shooters");
-    tables_layout->addWidget(widgets_.reset_all_shooters_button,
+    widgets_.reset_robot_pose_button = new QPushButton("Reset robot's pose");
+    tables_layout->addWidget(widgets_.reset_robot_pose_button,
                              1, 2, 1, 2, Qt::AlignRight | Qt::AlignTop);
 
     widgets_.start_performance_button = new QPushButton("Start performance");

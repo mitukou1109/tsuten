@@ -24,9 +24,9 @@ namespace tsuten_behavior
       IDLE = true
     };
 
-    void simulateBumperPush();
+    void resetRobotPose();
 
-    void resetAllShooters();
+    void simulateBumperPush();
 
     void shootOnTable(TableID table_id);
 
@@ -48,7 +48,9 @@ namespace tsuten_behavior
 
     actionlib::SimpleActionClient<tsuten_msgs::PerformAction> perform_action_client_;
 
-    ros::ServiceClient reset_all_shooters_service_client_;
+    ros::ServiceClient correct_robot_pose_client_;
     ros::ServiceClient shoot_on_table_service_client_;
+
+    std::string global_frame_;
   };
 } // namespace tsuten_behavior

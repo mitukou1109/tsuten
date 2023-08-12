@@ -25,7 +25,7 @@ namespace tsuten_navigation
       timer_ = nh.createTimer(ros::Rate(publish_rate_),
                               &LocalizationHandler::publishTF, this);
 
-      correct_robot_pose_service_server_ = nh.advertiseService(
+      correct_robot_pose_service_server_ = pnh.advertiseService(
           "correct_robot_pose", &LocalizationHandler::correctRobotPose, this);
 
       odom_to_global_tf_.setIdentity();

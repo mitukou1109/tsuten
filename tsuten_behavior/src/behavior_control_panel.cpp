@@ -2,7 +2,7 @@
 
 #include <pluginlib/class_list_macros.hpp>
 
-#include <tsuten_msgs/ResetShooter.h>
+#include <tsuten_msgs/CorrectRobotPose.h>
 #include <tsuten_msgs/SensorStates.h>
 #include <tsuten_msgs/ShootOnTable.h>
 
@@ -30,11 +30,14 @@ namespace tsuten_behavior
   {
     setLayout(ui_.getLayout());
 
+    pnh_.param("global_frame", global_frame_, std::string("map"));
+
     ros::NodeHandle nh;
     sensor_states_publisher_ = nh.advertise<tsuten_msgs::SensorStates>("sensor_states", 1);
 
-    reset_all_shooters_service_client_ =
-        behavior_server_nh_.serviceClient<tsuten_msgs::ResetShooter>("reset_all_shooters");
+    ros::NodeHandle localization_helper_nh("localization_helper");
+    correct_robot_pose_client_ =
+        localization_helper_nh.serviceClient<tsuten_msgs::CorrectRobotPose>("correct_robot_pose");
 
     shoot_on_table_service_client_ =
         behavior_server_nh_.serviceClient<tsuten_msgs::ShootOnTable>("shoot_on_table");
@@ -64,10 +67,13 @@ namespace tsuten_behavior
               std::bind(&BehaviorControlPanel::shootOnTable, this, table_id));
     }
 
-    connect(widgets.reset_all_shooters_button, &QPushButton::clicked, this, &BehaviorControlPanel::resetAllShooters);
+    connect(widgets.reset_robot_pose_button, &QPushButton::clicked, this,
+            &BehaviorControlPanel::resetRobotPose);
 
-    connect(widgets.start_performance_button, &QPushButton::clicked, this, &BehaviorControlPanel::startPerformance);
-    connect(widgets.stop_performance_button, &QPushButton::clicked, this, &BehaviorControlPanel::stopPerformance);
+    connect(widgets.start_performance_button, &QPushButton::clicked, this,
+            &BehaviorControlPanel::startPerformance);
+    connect(widgets.stop_performance_button, &QPushButton::clicked, this,
+            &BehaviorControlPanel::stopPerformance);
   }
 
   void BehaviorControlPanel::simulateBumperPush()
@@ -92,12 +98,18 @@ namespace tsuten_behavior
     sensor_states_publisher_.publish(sensor_states);
   }
 
-  void BehaviorControlPanel::resetAllShooters()
+  void BehaviorControlPanel::resetRobotPose()
   {
-    tsuten_msgs::ResetShooter service;
-    if (!reset_all_shooters_service_client_.call(service))
+    geometry_msgs::PoseStamped origin_pose;
+    origin_pose.header.frame_id = global_frame_;
+    origin_pose.header.stamp = ros::Time::now();
+    origin_pose.pose.orientation.w = 1.0;
+
+    tsuten_msgs::CorrectRobotPose service;
+    service.request.robot_pose = origin_pose;
+    if (!correct_robot_pose_client_.call(service))
     {
-      ROS_ERROR("Failed to call service reset_all_shooters");
+      ROS_ERROR("Failed to call service correct_robot_pose");
     }
   }
 
@@ -182,7 +194,7 @@ namespace tsuten_behavior
     {
       shoot_bottle_button_pair.second->setEnabled(state_bool);
     }
-    widgets.reset_all_shooters_button->setEnabled(state_bool);
+    widgets.reset_robot_pose_button->setEnabled(state_bool);
     widgets.start_performance_button->setEnabled(state_bool);
     widgets.stop_performance_button->setEnabled(!state_bool);
   }

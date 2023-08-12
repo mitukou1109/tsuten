@@ -21,8 +21,7 @@ namespace tsuten_behavior
       QComboBox *dual_table_upper_combo_box_;
       QPushButton *simulate_bumper_push_button;
       std::unordered_map<TableID, QPushButton *> shoot_bottle_buttons;
-      QPushButton *reset_all_shooters_button;
-
+      QPushButton *reset_robot_pose_button;
       QPushButton *start_performance_button;
       QPushButton *stop_performance_button;
     };
