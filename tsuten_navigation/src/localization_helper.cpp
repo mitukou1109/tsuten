@@ -51,7 +51,7 @@ namespace tsuten_navigation
 
       tf_broadcaster_.sendTransform(odom_to_global_tf_msg);
 
-      if (publish_odom_tf_)
+      if (publish_odom_tf_ && !robot_base_frame_.empty())
       {
         geometry_msgs::TransformStamped robot_base_to_odom_tf_msg;
         robot_base_to_odom_tf_msg.header.stamp = now_time;

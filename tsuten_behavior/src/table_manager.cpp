@@ -342,7 +342,7 @@ namespace tsuten_behavior
             }
             else
             {
-              ROS_WARN("Multiple lines detected on the same table base's face."
+              ROS_WARN("Multiple lines detected on the same table base's face.\n"
                        "Consider tuning parameters for Hough transform.");
               corrected_table_base_face_center_itr = std::min(
                   corrected_table_base_face_center_itr, line_center_itr,
