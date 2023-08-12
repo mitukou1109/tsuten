@@ -5,7 +5,7 @@
     <xacro:property name="length" value="0.043" />
     <xacro:property name="mass" value="0.2" />
     <xacro:property name="visualize" value="true" />
-    <xacro:property name="view_angle" value="180" />
+    <xacro:property name="view_angle" value="220" />
     <xacro:property name="min_range" value="0.12" />
     <xacro:property name="max_range" value="12" />
 
