@@ -153,7 +153,7 @@ namespace tsuten_behavior
     reconfigure_server_.setCallback(
         boost::bind(&BehaviorServer::reconfigureParameters, this, _1, _2));
 
-    navigation_handler_.waitForMoveBaseActionServer(ros::Duration(3.0));
+    navigation_handler_.waitForMoveBaseActionServer(ros::Duration(10.0));
 
     launch_perform_thread_ = std::make_unique<boost::thread>([this]
                                                              { launchPerformThread(); });
