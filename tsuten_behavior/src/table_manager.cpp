@@ -278,10 +278,10 @@ namespace tsuten_behavior
         {
           int row = static_cast<int>(
               scan_image.rows -
-              std::lround((global_scan_point.y() + map_metadata_.origin.position.y) /
+              std::lround((global_scan_point.y() - map_metadata_.origin.position.y) /
                           map_metadata_.resolution));
           int col = static_cast<int>(
-              std::lround((global_scan_point.x() + map_metadata_.origin.position.x) /
+              std::lround((global_scan_point.x() - map_metadata_.origin.position.x) /
                           map_metadata_.resolution));
 
           if (row >= 0 && row < scan_image.rows && col >= 0 && col < scan_image.cols)
@@ -319,13 +319,13 @@ namespace tsuten_behavior
       for (const auto &line : lines)
       {
         tf2::Vector3 line_start(
-            line[0] * map_metadata_.resolution - map_metadata_.origin.position.x,
-            (scan_image.rows - line[1]) * map_metadata_.resolution -
+            line[0] * map_metadata_.resolution + map_metadata_.origin.position.x,
+            (scan_image.rows - line[1]) * map_metadata_.resolution +
                 map_metadata_.origin.position.y,
             0);
         tf2::Vector3 line_end(
-            line[2] * map_metadata_.resolution - map_metadata_.origin.position.x,
-            (scan_image.rows - line[3]) * map_metadata_.resolution -
+            line[2] * map_metadata_.resolution + map_metadata_.origin.position.x,
+            (scan_image.rows - line[3]) * map_metadata_.resolution +
                 map_metadata_.origin.position.y,
             0);
 
