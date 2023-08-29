@@ -25,7 +25,8 @@ namespace tsuten_behavior
     TableManager() : pnh_("~"),
                      tf_listener_(tf_buffer_),
                      reconfigure_server_(reconfigure_mutex_),
-                     table_positions_(DEFAULT_TABLE_POSITIONS)
+                     table_positions_(DEFAULT_TABLE_POSITIONS),
+                     has_received_map_(false)
     {
       pnh_.param("global_frame", global_frame_, std::string("map"));
       pnh_.param("tf_publish_rate", tf_publish_rate_, 10.0);
@@ -220,6 +221,11 @@ namespace tsuten_behavior
 
     void lidarScanCallback(const sensor_msgs::LaserScanConstPtr &lidar_scan)
     {
+      if (!has_received_map_)
+      {
+        return;
+      }
+
       tf2::Transform lidar_start_tf, lidar_end_tf;
       try
       {
@@ -270,12 +276,22 @@ namespace tsuten_behavior
 
         try
         {
-          scan_image.at<uint8_t>(
+          int row = static_cast<int>(
               scan_image.rows -
-                  std::lround((global_scan_point.y() + map_metadata_.origin.position.y) /
-                              map_metadata_.resolution),
-              std::lround((global_scan_point.x() + map_metadata_.origin.position.x) /
-                          map_metadata_.resolution)) = 255;
+              std::lround((global_scan_point.y() - map_metadata_.origin.position.y) /
+                          map_metadata_.resolution));
+          int col = static_cast<int>(
+              std::lround((global_scan_point.x() - map_metadata_.origin.position.x) /
+                          map_metadata_.resolution));
+
+          if (row >= 0 && row < scan_image.rows && col >= 0 && col < scan_image.cols)
+          {
+            scan_image.at<uint8_t>(row, col) = 255;
+          }
+          else
+          {
+            continue;
+          }
         }
         catch (const cv::Exception &exception)
         {
@@ -292,19 +308,24 @@ namespace tsuten_behavior
                       hough_min_line_length_ / map_metadata_.resolution,
                       hough_max_line_gap_ / map_metadata_.resolution);
 
+      if (lines.empty())
+      {
+        return;
+      }
+
       detected_lines_marker_.points.clear();
 
       std::vector<tf2::Vector3> line_centers;
       for (const auto &line : lines)
       {
         tf2::Vector3 line_start(
-            line[0] * map_metadata_.resolution - map_metadata_.origin.position.x,
-            (scan_image.rows - line[1]) * map_metadata_.resolution -
+            line[0] * map_metadata_.resolution + map_metadata_.origin.position.x,
+            (scan_image.rows - line[1]) * map_metadata_.resolution +
                 map_metadata_.origin.position.y,
             0);
         tf2::Vector3 line_end(
-            line[2] * map_metadata_.resolution - map_metadata_.origin.position.x,
-            (scan_image.rows - line[3]) * map_metadata_.resolution -
+            line[2] * map_metadata_.resolution + map_metadata_.origin.position.x,
+            (scan_image.rows - line[3]) * map_metadata_.resolution +
                 map_metadata_.origin.position.y,
             0);
 
@@ -370,6 +391,10 @@ namespace tsuten_behavior
 
     void mapCallback(const nav_msgs::OccupancyGrid &map)
     {
+      if (!has_received_map_)
+      {
+        has_received_map_ = true;
+      }
       map_metadata_ = map.info;
     }
 
@@ -447,6 +472,8 @@ namespace tsuten_behavior
     visualization_msgs::Marker detected_lines_marker_;
 
     std::string global_frame_;
+
+    bool has_received_map_;
 
     double tf_publish_rate_;
 
