@@ -14,8 +14,14 @@ RUN git clone https://github.com/mitukou1109/tsuten_real_robot.git -b humble
 RUN git clone https://github.com/mitukou1109/tsuten_simulation.git -b humble
 RUN git clone https://github.com/Kotakku/jsk_visualization.git
 
-RUN rosdep install -y -i --from-paths .
+RUN rosdep update && rosdep install -y -i --from-paths .
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /tmp
+
+COPY setup_ros.bash ./
+RUN echo "" >> /root/.bashrc
+RUN cat setup_ros.bash >> /root/.bashrc
 
 WORKDIR /root/colcon_ws
