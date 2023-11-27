@@ -1,4 +1,3 @@
-<?xml version="1.0"?>
 <package format="2">
   <name>tsuten_description</name>
   <version>1.0.0</version>
@@ -8,8 +7,9 @@
 
   <license>MIT</license>
 
-  <exec_depend>gazebo_ros_pkgs</exec_depend>
-  <exec_depend>robot</exec_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>
