@@ -1,6 +1,6 @@
-<library path="lib/libbehavior_control_panel">
+<library path="tsuten_behavior">
   <class name="tsuten_behavior/BehaviorControlPanel" type="tsuten_behavior::BehaviorControlPanel"
-    base_class_type="rviz::Panel">
+    base_class_type="rviz_common::Panel">
     <description>Behavior control panel for Tsuten.</description>
   </class>
 </library>
